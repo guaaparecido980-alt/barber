@@ -187,32 +187,73 @@ window.addEventListener('DOMContentLoaded', function(){
   .config-btn:hover{background:var(--gold);color:#0a0a0a;border-color:var(--gold)}
   .spacer{flex:1}
 
-  /* KPI GRID - mais imponente, mais respiro */
+  /* EXECUTIVE SUMMARY - faixa logo abaixo do hero */
+  .exec-summary{
+    max-width:1440px;margin:0 auto;
+    padding:32px 40px 0;
+  }
+  .exec-summary-inner{
+    display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr;gap:0;
+    padding:28px 32px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:2px;
+    position:relative;
+    overflow:hidden;
+  }
+  .exec-summary-inner::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent 0%,var(--gold) 50%,transparent 100%);
+    opacity:.4;
+  }
+  .exec-divider{background:var(--border);width:1px;height:60%;align-self:center;justify-self:center}
+  .exec-item{padding:0 24px}
+  .exec-item:first-child{padding-left:8px}
+  .exec-item:last-child{padding-right:8px}
+  .exec-label{font-family:var(--mono);font-size:9px;color:var(--text-mute);letter-spacing:.28em;text-transform:uppercase;margin-bottom:10px;font-weight:500}
+  .exec-value{font-family:var(--display);font-size:28px;line-height:1;color:var(--text);font-weight:500;letter-spacing:-.02em;margin-bottom:6px}
+  .exec-value.gold{color:var(--gold)}
+  .exec-value.pos{color:#7cb054}
+  .exec-value.neg{color:var(--red)}
+  .exec-sub{font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.04em;line-height:1.4}
+
+  @media (max-width: 900px){
+    .exec-summary-inner{grid-template-columns:1fr 1fr;gap:0;padding:24px}
+    .exec-divider{display:none}
+    .exec-item{padding:16px;border-bottom:1px solid var(--border)}
+    .exec-item:nth-last-child(-n+2){border-bottom:none}
+    .exec-item:nth-child(2n+1){border-right:1px solid var(--border)}
+  }
   .kpi-grid{
-    max-width:1440px;margin:0 auto;padding:56px 40px 32px;
+    max-width:1440px;margin:0 auto;padding:64px 40px 40px;
     display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
     background:var(--border);border:1px solid var(--border);
     border-radius:2px;overflow:hidden;
-    box-shadow: 0 1px 0 rgba(212,175,106,.04) inset;
+    box-shadow: 0 1px 0 rgba(212,175,106,.04) inset, 0 20px 60px -30px rgba(0,0,0,.5);
   }
   .kpi{
-    background:var(--bg);padding:40px 32px;
+    background:var(--bg);padding:48px 36px 44px;
     transition: background .4s cubic-bezier(.4,0,.2,1);
     position:relative;
   }
   .kpi:hover{background:var(--bg-elev)}
   .kpi::before{
-    content:'';position:absolute;top:0;left:0;width:32px;height:1px;
+    content:'';position:absolute;top:0;left:0;width:40px;height:1px;
     background:linear-gradient(90deg,var(--gold) 0%,transparent 100%);
-    opacity:.7;
+    opacity:.8;
+    transition: width .5s cubic-bezier(.4,0,.2,1), opacity .5s;
   }
-  .kpi-label{font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.28em;text-transform:uppercase;margin-bottom:24px;font-weight:500}
-  .kpi-value{font-family:var(--display);font-size:52px;font-weight:500;line-height:1;letter-spacing:-.025em;color:var(--text)}
-  .kpi-value .currency{font-size:22px;color:var(--text-mute);margin-right:8px;font-style:italic;font-weight:400}
-  .kpi-value .suffix{font-size:22px;color:var(--text-mute);margin-left:4px}
-  .kpi-context{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:1.5;letter-spacing:.02em}
-  .kpi-bar{height:2px;background:var(--border);margin-top:22px;overflow:hidden;border-radius:1px}
-  .kpi-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+  .kpi:hover::before{width:80px;opacity:1}
+  .kpi-label{font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.3em;text-transform:uppercase;margin-bottom:32px;font-weight:500}
+  .kpi-value{
+    font-family:var(--display);font-size:clamp(48px,4.8vw,68px);
+    font-weight:500;line-height:.95;letter-spacing:-.03em;color:var(--text);
+  }
+  .kpi-value .currency{font-size:22px;color:var(--text-mute);margin-right:8px;font-style:italic;font-weight:400;vertical-align:top;line-height:1.8}
+  .kpi-value .suffix{font-size:22px;color:var(--text-mute);margin-left:4px;vertical-align:top;line-height:1.8}
+  .kpi-context{margin-top:24px;font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:1.6;letter-spacing:.02em}
+  .kpi-bar{height:2px;background:var(--border);margin-top:24px;overflow:hidden;border-radius:1px}
+  .kpi-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));transition:width 1.4s cubic-bezier(.4,0,.2,1)}
 
   /* SECTION - respiro maior */
   .section{max-width:1440px;margin:0 auto;padding:48px 40px 32px}
@@ -275,25 +316,25 @@ window.addEventListener('DOMContentLoaded', function(){
   .alerts.ok .alert-val{color:var(--green)}
 
   .barber-table{background:var(--bg-card);border:1px solid var(--border);overflow:hidden;overflow-x:auto;border-radius:2px}
-  .bt-head{display:grid;grid-template-columns:48px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;padding:20px 28px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.24em;text-transform:uppercase;min-width:980px;font-weight:500;background:rgba(212,175,106,.02)}
+  .bt-head{display:grid;grid-template-columns:48px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;padding:22px 32px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.26em;text-transform:uppercase;min-width:980px;font-weight:500;background:rgba(212,175,106,.025)}
   .bt-row{
     display:grid;grid-template-columns:48px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
-    padding:24px 28px;border-bottom:1px solid var(--border);align-items:center;
+    padding:28px 32px;border-bottom:1px solid var(--border);align-items:center;
     transition: background .3s cubic-bezier(.4,0,.2,1);
     min-width:980px;
   }
   .bt-row:hover{background:var(--bg-card-hover)}
   .bt-row:last-child{border-bottom:none}
-  .bt-rank{font-family:var(--display);font-style:italic;font-size:24px;color:var(--gold);font-weight:500}
+  .bt-rank{font-family:var(--display);font-style:italic;font-size:26px;color:var(--gold);font-weight:500}
   .bt-name{font-family:var(--display);font-size:19px;font-weight:500;color:var(--text)}
-  .bt-name small{display:block;font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.12em;text-transform:uppercase;margin-top:4px;font-style:normal;font-weight:500}
+  .bt-name small{display:block;font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.14em;text-transform:uppercase;margin-top:6px;font-style:normal;font-weight:500;line-height:1.5}
   .bt-val{font-family:var(--mono);font-size:13px;color:var(--text)}
   .bt-val.dim{color:var(--text-dim)}
   .bt-val.gold{color:var(--gold)}
-  .bt-occ{display:flex;align-items:center;gap:12px}
+  .bt-occ{display:flex;align-items:center;gap:14px}
   .bt-occ-bar{flex:1;height:3px;background:var(--border);overflow:hidden;max-width:64px;border-radius:1px}
   .bt-occ-fill{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));transition:width 1s cubic-bezier(.4,0,.2,1)}
-  .bt-margin-pill{font-family:var(--mono);font-size:10px;padding:5px 11px;letter-spacing:.12em;text-transform:uppercase;display:inline-block;border:1px solid;font-weight:500;border-radius:1px}
+  .bt-margin-pill{font-family:var(--mono);font-size:10px;padding:6px 12px;letter-spacing:.14em;text-transform:uppercase;display:inline-block;border:1px solid;font-weight:500;border-radius:1px}
   .bt-margin-pill.pos{border-color:var(--green);color:var(--green);background:rgba(90,138,58,.06)}
   .bt-margin-pill.neg{border-color:var(--red);color:var(--red);background:rgba(184,54,42,.08)}
 
@@ -442,47 +483,50 @@ window.addEventListener('DOMContentLoaded', function(){
   .health-verdict.good strong{color:#5a8a3a}
 
   /* Ranking de Extras */
-  .extras-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:24px}
-  .extras-stat{background:var(--bg);padding:24px;text-align:left;position:relative;overflow:hidden}
-  .extras-stat::before{content:'';position:absolute;top:0;left:0;width:32px;height:1px;background:var(--gold)}
-  .extras-stat-lbl{font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
-  .extras-stat-val{font-family:var(--display);font-size:32px;color:var(--gold);line-height:1}
+  .extras-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:32px;border-radius:2px;overflow:hidden}
+  .extras-stat{background:var(--bg);padding:32px 28px;text-align:left;position:relative;overflow:hidden;transition:background .3s}
+  .extras-stat:hover{background:var(--bg-elev)}
+  .extras-stat::before{content:'';position:absolute;top:0;left:0;width:36px;height:1px;background:linear-gradient(90deg,var(--gold),transparent);opacity:.8}
+  .extras-stat-lbl{font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.26em;text-transform:uppercase;margin-bottom:18px;font-weight:500}
+  .extras-stat-val{font-family:var(--display);font-size:36px;color:var(--gold);line-height:1;font-weight:500;letter-spacing:-.02em}
   .extras-stat-val em{font-style:italic}
-  .extras-stat-sub{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:8px}
+  .extras-stat-sub{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:12px;letter-spacing:.02em}
 
   .extras-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 
   .extra-row{
-    display:grid;grid-template-columns:36px 1.6fr 1fr 1fr;gap:12px;align-items:center;
-    padding:16px 4px;border-bottom:1px solid var(--border);
+    display:grid;grid-template-columns:40px 1.6fr 1fr 1fr;gap:14px;align-items:center;
+    padding:22px 8px;border-bottom:1px solid var(--border);
+    transition: background .3s;
   }
+  .extra-row:hover{background:rgba(212,175,106,.03)}
   .extra-row:last-child{border-bottom:none}
-  .extra-row.podium-1{background:linear-gradient(90deg,rgba(201,169,97,.08),transparent)}
-  .extra-row.podium-2,.extra-row.podium-3{background:linear-gradient(90deg,rgba(201,169,97,.03),transparent)}
+  .extra-row.podium-1{background:linear-gradient(90deg,rgba(212,175,106,.1),transparent)}
+  .extra-row.podium-2,.extra-row.podium-3{background:linear-gradient(90deg,rgba(212,175,106,.04),transparent)}
   .extra-rank{
-    font-family:var(--display);font-style:italic;font-size:24px;color:var(--text-mute);
-    text-align:center;line-height:1;
+    font-family:var(--display);font-style:italic;font-size:26px;color:var(--text-mute);
+    text-align:center;line-height:1;font-weight:500;
   }
-  .extra-row.podium-1 .extra-rank{color:var(--gold);font-size:30px}
-  .extra-row.podium-2 .extra-rank,.extra-row.podium-3 .extra-rank{color:var(--gold-soft);font-size:26px}
-  .extra-name{font-family:var(--display);font-size:16px;line-height:1.2}
-  .extra-name small{display:block;font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.1em;text-transform:uppercase;margin-top:4px;font-style:normal}
+  .extra-row.podium-1 .extra-rank{color:var(--gold);font-size:32px}
+  .extra-row.podium-2 .extra-rank,.extra-row.podium-3 .extra-rank{color:var(--gold-soft);font-size:28px}
+  .extra-name{font-family:var(--display);font-size:17px;line-height:1.2;font-weight:500;color:var(--text)}
+  .extra-name small{display:block;font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.12em;text-transform:uppercase;margin-top:6px;font-style:normal;font-weight:500}
   .extra-qty{font-family:var(--mono);font-size:13px;color:var(--text);text-align:right}
-  .extra-qty .qty-big{font-family:var(--display);font-size:20px;color:var(--text);font-style:italic}
+  .extra-qty .qty-big{font-family:var(--display);font-size:24px;color:var(--text);font-style:italic;font-weight:500}
   .extra-bonus{
-    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    text-align:right;padding:6px 10px;border:1px solid;display:inline-block;
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    text-align:right;padding:7px 11px;border:1px solid;display:inline-block;font-weight:500;
   }
-  .extra-bonus.gold{border-color:var(--gold);color:var(--gold);background:rgba(201,169,97,.06)}
+  .extra-bonus.gold{border-color:var(--gold);color:var(--gold);background:rgba(212,175,106,.06)}
   .extra-bonus.empty{border-color:var(--border-strong);color:var(--text-mute)}
   .extra-bonus-wrap{text-align:right}
-  .extra-bonus-wrap .bonus-val{font-family:var(--display);font-size:18px;font-style:italic;color:var(--gold);display:block;margin-bottom:4px}
-  .extra-bonus-wrap .bonus-tier{font-family:var(--mono);font-size:9px;color:var(--text-mute);letter-spacing:.15em;text-transform:uppercase}
+  .extra-bonus-wrap .bonus-val{font-family:var(--display);font-size:20px;font-style:italic;color:var(--gold);display:block;margin-bottom:6px;font-weight:500}
+  .extra-bonus-wrap .bonus-tier{font-family:var(--mono);font-size:9px;color:var(--text-mute);letter-spacing:.18em;text-transform:uppercase;font-weight:500}
 
   .extras-empty{
-    text-align:center;padding:32px 20px;color:var(--text-dim);font-size:13px;line-height:1.6;
+    text-align:center;padding:40px 24px;color:var(--text-dim);font-size:13px;line-height:1.6;
   }
-  .extras-empty strong{display:block;font-family:var(--display);font-size:18px;color:var(--gold);margin-bottom:8px;font-style:italic}
+  .extras-empty strong{display:block;font-family:var(--display);font-size:20px;color:var(--gold);margin-bottom:10px;font-style:italic}
 
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
   .modal.open{display:flex}
@@ -736,7 +780,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v7.0</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v7.1</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -756,6 +800,35 @@ window.addEventListener('DOMContentLoaded', function(){
       <div class="hero-period">
         Período analisado
         <strong id="period-label">—</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXECUTIVE SUMMARY - faixa de highlights -->
+  <section class="exec-summary" id="exec-summary" style="display:none">
+    <div class="exec-summary-inner">
+      <div class="exec-item">
+        <div class="exec-label">Faturamento</div>
+        <div class="exec-value" id="exec-revenue">—</div>
+        <div class="exec-sub" id="exec-revenue-sub">—</div>
+      </div>
+      <div class="exec-divider"></div>
+      <div class="exec-item">
+        <div class="exec-label">Resultado do Mês</div>
+        <div class="exec-value" id="exec-result">—</div>
+        <div class="exec-sub" id="exec-result-sub">—</div>
+      </div>
+      <div class="exec-divider"></div>
+      <div class="exec-item">
+        <div class="exec-label">Destaque</div>
+        <div class="exec-value" id="exec-top">—</div>
+        <div class="exec-sub" id="exec-top-sub">—</div>
+      </div>
+      <div class="exec-divider"></div>
+      <div class="exec-item">
+        <div class="exec-label">Ticket Médio</div>
+        <div class="exec-value" id="exec-ticket">—</div>
+        <div class="exec-sub" id="exec-ticket-sub">—</div>
       </div>
     </div>
   </section>
@@ -2239,7 +2312,37 @@ const fmt = {
 /* ============================================
    RENDER PRINCIPAL
    ============================================ */
+// Tooltip premium - aplicado em todos os gráficos
+function applyChartDefaults(){
+  if(typeof Chart === 'undefined' || Chart._defaultsApplied) return;
+  Chart.defaults.font.family = "'Inter Tight', sans-serif";
+  Chart.defaults.color = '#9c988a';
+  Chart.defaults.plugins.tooltip = {
+    ...Chart.defaults.plugins.tooltip,
+    backgroundColor: 'rgba(12,11,9,.97)',
+    titleColor: '#d4af6a',
+    titleFont: { family: 'JetBrains Mono', size: 10, weight: '600' },
+    bodyColor: '#ede9e0',
+    bodyFont: { family: 'JetBrains Mono', size: 12, weight: '400' },
+    footerColor: '#5e5b53',
+    footerFont: { family: 'JetBrains Mono', size: 10, weight: '400' },
+    padding: 16,
+    boxPadding: 8,
+    cornerRadius: 2,
+    borderColor: 'rgba(212,175,106,.25)',
+    borderWidth: 1,
+    displayColors: true,
+    boxWidth: 10,
+    boxHeight: 10,
+    usePointStyle: false,
+    caretSize: 6,
+    caretPadding: 8
+  };
+  Chart._defaultsApplied = true;
+}
+
 function renderAll(minDate, maxDate){
+  applyChartDefaults();
   // Agrupa linhas em atendimentos
   GROUPED = groupAttendances(RAW);
 
@@ -2397,6 +2500,54 @@ function renderAll(minDate, maxDate){
   document.getElementById('kpi-ticket').textContent = fmt.brl(avgTicket);
   document.getElementById('kpi-ticket-ctx').textContent = `R$ ${fmt.brl2(totalRevenue)} ÷ ${totalAttendances} atendimentos`;
   document.getElementById('kpi-ticket-bar').style.width = '65%';
+
+  // === EXECUTIVE SUMMARY (faixa abaixo do hero) ===
+  const execSummary = document.getElementById('exec-summary');
+  if(execSummary){
+    execSummary.style.display = 'block';
+
+    // Faturamento
+    document.getElementById('exec-revenue').textContent = 'R$ ' + fmt.brl(displayRevenue);
+    document.getElementById('exec-revenue').className = 'exec-value gold';
+    document.getElementById('exec-revenue-sub').textContent = `${totalAttendances} atendimentos`;
+
+    // Resultado (depois do custo fixo)
+    // Calcula resultado final
+    const _totalChairCost = barbersList.reduce((s,b) => s + b.chairCostProrated, 0);
+    const _totalProductNet = barbersList.reduce((s,b) => s + (b.productNetForHouse || 0), 0);
+    const _caixaProdsRevenue = RAW_PRODUCTS
+      .filter(r => isCaixaUser(r.usuario) && !String(r.estoque||'').toLowerCase().includes('bebida'))
+      .reduce((s,r) => s + r.total, 0);
+    const _bebidasRevenue = RAW_PRODUCTS
+      .filter(r => String(r.estoque||'').toLowerCase().includes('bebida'))
+      .reduce((s,r) => s + r.total, 0);
+    const _totalHouse = totalSalao + _totalProductNet + _caixaProdsRevenue + _bebidasRevenue;
+    const _finalResult = _totalHouse - _totalChairCost;
+    const resultEl = document.getElementById('exec-result');
+    resultEl.textContent = (_finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(_finalResult));
+    resultEl.className = 'exec-value ' + (_finalResult >= 0 ? 'pos' : 'neg');
+    const ratio = displayRevenue > 0 ? (_finalResult / displayRevenue * 100) : 0;
+    document.getElementById('exec-result-sub').textContent = `${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre faturamento`;
+
+    // Destaque: barbeiro com maior margem positiva (não afastado)
+    const activeBarbers = barbersList.filter(b => !b.awayStatus);
+    const topBarber = activeBarbers.length > 0
+      ? [...activeBarbers].sort((a,b) => b.margin - a.margin)[0]
+      : null;
+    if(topBarber){
+      document.getElementById('exec-top').textContent = topBarber.name;
+      document.getElementById('exec-top').className = 'exec-value';
+      const marginTxt = topBarber.margin >= 0 ? '+R$ ' + fmt.brl(topBarber.margin) : '−R$ ' + fmt.brl(Math.abs(topBarber.margin));
+      document.getElementById('exec-top-sub').textContent = `${marginTxt} de margem · R$ ${fmt.brl(topBarber.revenue)}`;
+    } else {
+      document.getElementById('exec-top').textContent = '—';
+      document.getElementById('exec-top-sub').textContent = '—';
+    }
+
+    // Ticket médio
+    document.getElementById('exec-ticket').textContent = 'R$ ' + fmt.brl(avgTicket);
+    document.getElementById('exec-ticket-sub').textContent = `Média de ${barbersList.length} profissionais`;
+  }
 
   // === Insights financeiros ===
   // LINHA 1: Serviços (do Excel)
