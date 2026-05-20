@@ -780,7 +780,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v7.8</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v7.9</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1389,15 +1389,17 @@ const CFG = {
   daysOff: {},
   // Status de afastamento por profissional: 'ferias' | 'afastado' | null
   // Se setado, zera o custo da cadeira no mês (empresa absorve)
-  // Adriano segue de férias. Luan voltou ao trabalho normal.
+  // Luan voltou ao trabalho normal.
   awayStatus: {
-    'Adriano': 'ferias'
   },
+  // Profissionais removidos do quadro (não aparecem no relatório nem entram em cálculos)
+  // Adriano: aposentou
+  removedBarbers: ['Adriano'],
   // Dias contratados por profissional (deve trabalhar) - se null, usa dias reais trabalhados
   // Patricia: 16 (Qua-Sáb × 4 semanas), Sirlene: 8 (Seg-Ter × 4 semanas), demais: 24 (26 dias - 2 folgas)
   contractedDays: {
     'Wagner': 24, 'Jorge': 24, 'Emerson': 24, 'Maicon': 24, 'Perez': 24,
-    'Pedro': 24, 'Gabriel': 24, 'Fernando': 24, 'Adriano': 24, 'Luan': 24,
+    'Pedro': 24, 'Gabriel': 24, 'Fernando': 24, 'Luan': 24,
     'Drielli': 24, 'Liliane': 24,
     'Patricia': 16, 'Sirlene': 8
   },
@@ -1411,10 +1413,9 @@ const CFG = {
     'Pedro':    { weight: 1.0, label: 'Cadeira' },
     'Gabriel':  { weight: 1.0, label: 'Cadeira' },
     'Fernando': { weight: 1.0, label: 'Cadeira' },
-    'Adriano':  { weight: 1.0, label: 'Cadeira' },
     'Luan':     { weight: 1.0, label: 'Cadeira' },
-    'Drielli':  { weight: 0.7, label: 'Estação Pelos' },
-    'Liliane':  { weight: 0.7, label: 'Estação Pelos' },
+    'Drielli':  { weight: 1.0, label: 'Estação Pelos' },
+    'Liliane':  { weight: 1.0, label: 'Estação Pelos' },
     'Patricia': { weight: 0.67, label: 'Mesa Manicure (Qua-Sáb)' },
     'Sirlene':  { weight: 0.33, label: 'Mesa Manicure (Seg-Ter)' }
   },
@@ -1563,7 +1564,8 @@ function readServicesFile(file, callback){
           };
         })
         .filter(r => r.data instanceof Date && !isNaN(r.data))
-        .filter(r => !isCaixaUser(r.usuario));  // Remove "Caixa" - registros sem profissional definido
+        .filter(r => !isCaixaUser(r.usuario))  // Remove "Caixa" - registros sem profissional definido
+        .filter(r => !isRemovedBarber(r.usuario));  // Remove profissionais aposentados/demitidos
 
       if(RAW.length === 0){
         alert('Nenhum dado válido encontrado no arquivo de serviços. Confira se exportou no modo detalhado.');
@@ -1678,7 +1680,8 @@ function readProductsFile(file, callback){
             total: parseBRL(r['Total final'])
           };
         })
-        .filter(r => r.data instanceof Date && !isNaN(r.data));
+        .filter(r => r.data instanceof Date && !isNaN(r.data))
+        .filter(r => !isRemovedBarber(r.usuario));  // Remove aposentados/demitidos
         // Não filtra Caixa: vendas pela recepção precisam entrar no totalizador geral
         // O filtro acontece só no ranking de barbeiros (em renderExtrasRanking)
 
@@ -1739,7 +1742,9 @@ function handlePrevFile(file){
             fidelidade: parseBRL(r['Fidelidade'])
           };
         })
-        .filter(r => r.data instanceof Date && !isNaN(r.data));
+        .filter(r => r.data instanceof Date && !isNaN(r.data))
+        .filter(r => !isCaixaUser(r.usuario))
+        .filter(r => !isRemovedBarber(r.usuario));
 
       if(RAW_PREV.length === 0){
         alert('Não consegui ler atendimentos do arquivo anterior.');
@@ -2232,6 +2237,12 @@ function cleanBarberName(name){
 function isCaixaUser(name){
   const n = String(name || '').toLowerCase().trim();
   return n === 'caixa' || n === 'recepcao' || n === 'recepção' || n === 'recepcionista';
+}
+
+// Profissional removido do quadro (aposentado/demitido) - não aparece nem conta
+function isRemovedBarber(name){
+  const n = String(name || '').toLowerCase().trim();
+  return (CFG.removedBarbers || []).some(r => String(r).toLowerCase().trim() === n);
 }
 
 /* ============================================
@@ -2931,7 +2942,7 @@ function renderAll(minDate, maxDate){
    - Filtra só BARBEIROS HOMENS pela lista MALE_BARBERS
    ============================================ */
 // Lista de barbeiros homens (editável pelo modal de configuração se necessário)
-const MALE_BARBERS = ['Wagner','Jorge','Emerson','Maicon','Perez','Luan','Pedro','Gabriel','Fernando','Adriano'];
+const MALE_BARBERS = ['Wagner','Jorge','Emerson','Maicon','Perez','Luan','Pedro','Gabriel','Fernando'];
 
 function isExtraService(name){
   return /\bextra\b/i.test(String(name || ''));
