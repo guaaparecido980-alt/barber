@@ -780,7 +780,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v7.4</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v7.7</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1824,21 +1824,46 @@ function readCaixaFile(file, callback){
       const idxFatMenosTaxa = 5;     // F - Faturado menos Taxa
       const idxValor = 6;            // G - Valor faturado
 
+      // Ordem fixa que o Programa Salão exporta as formas de pagamento agrupado
+      // Fallback usado quando o nome da forma vem vazio (bug inline strings da SheetJS)
+      const formasFallback = ['Crédito Bin', 'Débito Bin', 'Dinheiro', 'Fidelidade', 'Pix', 'PIX CAIXA'];
+
       // Lê linhas de dados (a partir da linha 3 - índice 2, ignorando título e cabeçalho)
       RAW_CAIXA = [];
+      let formaIdx = 0;
       for(let r = 2; r < allRows.length; r++){
         const row = allRows[r];
         const colA = String(row[0]||'').trim();
-        const forma = String(row[idxForma]||'').trim();
-
-        // Linha "Total" - para de ler
-        if(normalize(colA) === 'total' || normalize(forma) === 'total') break;
+        let forma = String(row[idxForma]||'').trim();
 
         const valor = parseBRL(row[idxValor]);
         const qtd = parseBRL(row[idxQtd]);
 
+        // Linha "Total" - para de ler
+        // Detecta pela presença de "total" nas colunas A/B OU pela qtd ser muito alta sem valor
+        // (linha Total geralmente tem soma da quantidade mas valor pode vir vazio)
+        if(normalize(colA) === 'total' || normalize(forma) === 'total') break;
+        if(qtd > 0 && valor === 0 && !forma){
+          // Provável linha Total quando inline strings estão ilegíveis
+          // (qtd grande, valor vazio na col G por causa do "R$ X" formatado)
+          break;
+        }
+
         // Linha sem dados úteis - pula
         if(!forma && valor === 0 && qtd === 0) continue;
+
+        // Se forma veio vazia mas tem valor/qtd, é o bug inline strings
+        // Usa o nome da lista de fallback baseado na posição
+        if(!forma && (valor > 0 || qtd > 0)){
+          if(formaIdx < formasFallback.length){
+            forma = formasFallback[formaIdx];
+            console.log('💰 Inline string vazia na linha', r, '- usando fallback:', forma);
+          } else {
+            console.log('💰 Sem fallback disponível pra linha', r);
+            continue;
+          }
+        }
+
         if(!forma) continue;
 
         RAW_CAIXA.push({
@@ -1848,6 +1873,7 @@ function readCaixaFile(file, callback){
           valorFaturado: valor,
           faturadoMenosTaxa: parseBRL(row[idxFatMenosTaxa])
         });
+        formaIdx++;
       }
 
       if(RAW_CAIXA.length === 0){
@@ -2507,12 +2533,18 @@ function renderAll(minDate, maxDate){
   const returnRate = uniqueClients > 0 ? (returningClients / uniqueClients) * 100 : 0;
 
   // === KPIs ===
-  // Prioridade do Faturamento Bruto: 1) Caixa Geral (verdade real) 2) Manual (modal) 3) Excel
+  // Prioridade do Faturamento Bruto: 1) Caixa Geral REAL (real) 2) Manual (modal) 3) Excel
+  // IMPORTANTE: o Caixa Geral inclui "Fidelidade" como forma de pagamento, mas isso NÃO é
+  // dinheiro real - é só registro contábil de cortes pagos com pontos. Subtrai pra ter o valor real.
   const caixaTotal = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
+  const fidelidadeCaixa = RAW_CAIXA.find(r => String(r.forma||'').toLowerCase().trim() === 'fidelidade');
+  const fidelidadeValor = fidelidadeCaixa ? fidelidadeCaixa.valorFaturado : 0;
+  const caixaRealEmDinheiro = caixaTotal - fidelidadeValor;
+
   let displayRevenue, revenueSource;
   if(caixaTotal > 0){
-    displayRevenue = caixaTotal;
-    revenueSource = 'do Caixa Geral (real)';
+    displayRevenue = caixaRealEmDinheiro;  // Faturamento bruto REAL (sem fidelidade)
+    revenueSource = 'do Caixa Geral (real, sem fidelidade)';
   } else if(CFG.manualRevenue && CFG.manualRevenue > 0){
     displayRevenue = CFG.manualRevenue;
     revenueSource = 'do dashboard Programa Salão';
@@ -2549,12 +2581,12 @@ function renderAll(minDate, maxDate){
     document.getElementById('exec-revenue').className = 'exec-value gold';
     document.getElementById('exec-revenue-sub').textContent = `${totalAttendances} atendimentos`;
 
-    // Resultado Real = Receita líquida da casa − Custo Fixo
-    // (mesma fórmula do bloco principal "Resultado real do mês" - Opção B)
+    // Resultado Real = Receita líquida da casa − Fidelidade − Custo Fixo
+    // (mesma fórmula do bloco principal "Resultado real do mês")
     const _execProductNet = barbersList.reduce((s,b) => s + (b.productNetForHouse || 0), 0)
       + (RAW_PRODUCTS||[]).filter(r => isCaixaUser(r.usuario) && !String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0)
       + (RAW_PRODUCTS||[]).filter(r => String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0);
-    const _execReceitaLiquida = totalSalao + _execProductNet;
+    const _execReceitaLiquida = totalSalao + _execProductNet - fidelidadeValor;
     const _execFinalResult = _execReceitaLiquida - CFG.totalFixedCost;
     const resultEl = document.getElementById('exec-result');
     resultEl.textContent = (_execFinalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(_execFinalResult));
@@ -2644,7 +2676,7 @@ function renderAll(minDate, maxDate){
   // IMPORTANTE: A coluna "Fidelidade" do Excel de serviços é PONTOS ACUMULADOS (cashback do programa de pontos)
   // que o cliente recebeu naquele atendimento - NÃO é "valor de corte resgatado".
   // O valor REAL de cortes pagos com fidelidade está no Caixa Geral (forma de pagamento "Fidelidade").
-  const fidelidadeCaixa = RAW_CAIXA.find(r => String(r.forma||'').toLowerCase().trim() === 'fidelidade');
+  // (fidelidadeCaixa já foi declarada no topo, na seção de KPIs)
   const totalFidelidadeUsada = fidelidadeCaixa ? fidelidadeCaixa.valorFaturado : 0;
   const fidelidadeCount = fidelidadeCaixa ? fidelidadeCaixa.qtdPagamentos : 0;
   const totalPontosAcumulados = RAW.reduce((s,r) => s + (r.fidelidade || 0), 0);
@@ -2682,13 +2714,20 @@ function renderAll(minDate, maxDate){
     const totalExcelServicos = totalRevenue; // Total Cobrado dos serviços
     const totalExcelProdutos = (RAW_PRODUCTS || []).reduce((s,r) => s + (r.total || 0), 0);
     const totalExcel = totalExcelServicos + totalExcelProdutos;
-    const totalCaixa = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
-    const diff = totalExcel - totalCaixa;
+    const totalCaixaBruto = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
+    const totalCaixaReal = totalCaixaBruto - fidelidadeValor; // sem fidelidade (não é dinheiro)
+    // Excel comparável: precisa tirar também os atendimentos pagos com fidelidade
+    const totalExcelReal = totalExcel - fidelidadeValor;
+    const diff = totalExcelReal - totalCaixaReal;
 
-    document.getElementById('rec-excel').textContent = 'R$ ' + fmt.brl(totalExcel);
-    document.getElementById('rec-excel-desc').textContent = `Serviços (R$ ${fmt.brl(totalExcelServicos)}) + Produtos (R$ ${fmt.brl(totalExcelProdutos)})`;
+    document.getElementById('rec-excel').textContent = 'R$ ' + fmt.brl(totalExcelReal);
+    document.getElementById('rec-excel-desc').innerHTML = `Serviços (R$ ${fmt.brl(totalExcelServicos)}) + Produtos (R$ ${fmt.brl(totalExcelProdutos)})${fidelidadeValor > 0 ? `<br><span style="color:var(--text-mute)">− R$ ${fmt.brl(fidelidadeValor)} de fidelidade (pago com pontos)</span>` : ''}`;
 
-    document.getElementById('rec-caixa').textContent = 'R$ ' + fmt.brl(totalCaixa);
+    document.getElementById('rec-caixa').textContent = 'R$ ' + fmt.brl(totalCaixaReal);
+    const recCaixaDesc = document.querySelector('#ins-reconciliation-block div[id="rec-caixa"]').nextElementSibling;
+    if(recCaixaDesc){
+      recCaixaDesc.innerHTML = `Faturamento bruto real${fidelidadeValor > 0 ? `<br><span style="color:var(--text-mute)">Caixa R$ ${fmt.brl(totalCaixaBruto)} − R$ ${fmt.brl(fidelidadeValor)} fidelidade</span>` : ''}`;
+    }
 
     const diffEl = document.getElementById('rec-diff');
     const diffDescEl = document.getElementById('rec-diff-desc');
@@ -2699,14 +2738,14 @@ function renderAll(minDate, maxDate){
       diffEl.textContent = 'R$ ' + fmt.brl(Math.abs(diff));
       diffEl.style.color = '#5a8a3a';
       diffDescEl.textContent = '✓ Os números batem perfeitamente';
-      explainEl.innerHTML = `<strong style="color:#5a8a3a">Tudo conferido.</strong> O que foi lançado no Excel é exatamente o que entrou no Caixa Geral.`;
+      explainEl.innerHTML = `<strong style="color:#5a8a3a">Tudo conferido.</strong> O que foi lançado no Excel (descontando fidelidade) é exatamente o que entrou no caixa em dinheiro.`;
     } else if(diff > 0){
       // Excel maior que caixa - normal
       diffEl.textContent = '−R$ ' + fmt.brl(diff);
       diffEl.style.color = '#b8362a';
-      const pctDiff = totalExcel > 0 ? (diff/totalExcel*100).toFixed(1).replace('.',',') : '0';
+      const pctDiff = totalExcelReal > 0 ? (diff/totalExcelReal*100).toFixed(1).replace('.',',') : '0';
       diffDescEl.textContent = `${pctDiff}% do lançado não entrou no caixa`;
-      explainEl.innerHTML = `<strong style="color:var(--text)">R$ ${fmt.brl(diff)} foram lançados no Excel mas não chegaram no caixa.</strong> Provavelmente: cancelamentos pós-cobrança, devoluções, ou atendimentos lançados em duplicidade. <strong>Vale investigar no Programa Salão</strong> — qualquer divergência acima de 1-2% merece atenção.`;
+      explainEl.innerHTML = `<strong style="color:var(--text)">R$ ${fmt.brl(diff)} foram lançados no Excel mas não chegaram em dinheiro no caixa.</strong> Provavelmente: cancelamentos pós-cobrança, devoluções ou atendimentos lançados em duplicidade. <strong>Vale investigar no Programa Salão</strong> — divergência acima de 1-2% merece atenção.`;
     } else {
       // Caixa maior que excel - estranho
       diffEl.textContent = '+R$ ' + fmt.brl(Math.abs(diff));
@@ -2718,34 +2757,29 @@ function renderAll(minDate, maxDate){
     reconBlock.style.display = 'none';
   }
 
-  // === RESULTADO REAL DO MÊS (Opção B - consistente com Margem após custo das cadeiras) ===
-  // Fórmula: Receita retida da casa (serviços) + Líquido total produtos − Custo Fixo
+  // === RESULTADO REAL DO MÊS (Opção B + ajuste fidelidade) ===
+  // Fórmula: Receita retida casa (serv) + Líquido produtos − Fidelidade resgatada − Custo Fixo
   //
-  // Por que essa fórmula:
-  // - totalSalao = Total Cobrado serviços − Comissão paga aos barbeiros = R$ 105.397 (o que SOBRA pra casa)
-  // - totalProductNet = R$ 14.664 (Barbeiros líq + Caixa + Bebidas)
-  // - Custo Fixo = R$ 125.133 (CLT, retiradas, estrutura)
-  //
-  // OBS: Não usa Caixa Geral aqui porque os R$ 6.197 de divergência (Excel vs Caixa)
-  // são cancelamentos/devoluções já explicados na seção Conciliação Financeira acima.
-  //
-  // O Faturamento Bruto MOSTRADO no card continua sendo o Caixa Geral (verdade absoluta),
-  // mas o resultado usa a receita líquida da casa (consistente com a Margem do Resumo Financeiro).
-  const caixaTotalCalc = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
-  const usedRevenue = caixaTotalCalc > 0 ? caixaTotalCalc : (CFG.manualRevenue > 0 ? CFG.manualRevenue : totalRevenue);
+  // Por que subtrai fidelidade:
+  // - O R$ 5.062 de "Fidelidade" no Caixa Geral NÃO é dinheiro real (cliente pagou com pontos)
+  // - Mas o barbeiro RECEBEU comissão normal sobre o corte (a casa pagou)
+  // - Logo, a casa "deu" esse corte de graça — é DESPESA real
+  const caixaTotalCalc = caixaTotal;  // já calculado acima
+  const usedRevenue = caixaTotalCalc > 0 ? caixaRealEmDinheiro : (CFG.manualRevenue > 0 ? CFG.manualRevenue : totalRevenue);
 
-  // Receita líquida que entra na casa (serviços já sem comissão + produtos líquidos)
-  const receitaLiquidaCasa = totalSalao + totalProductNet;
+  // Receita líquida que entra na casa REAL (já descontando fidelidade não recebida)
+  const receitaLiquidaCasa = totalSalao + totalProductNet - fidelidadeValor;
   const finalResult = receitaLiquidaCasa - CFG.totalFixedCost;
 
   document.getElementById('ins-final-bruto').textContent = 'R$ ' + fmt.brl(usedRevenue);
-  document.getElementById('ins-final-bruto-desc').textContent = caixaTotalCalc > 0
-    ? 'Valor real do Caixa Geral'
+  document.getElementById('ins-final-bruto-desc').innerHTML = caixaTotalCalc > 0
+    ? `Valor real do Caixa Geral<br><span style="color:var(--text-mute)">${fidelidadeValor > 0 ? `(${fmt.brl(caixaTotalCalc)} − ${fmt.brl(fidelidadeValor)} fidelidade)` : ''}</span>`
     : (CFG.manualRevenue > 0 ? 'Valor manual (do dashboard Programa Salão)' : 'Valor estimado pelo Excel de serviços');
 
   // O card do meio mostra a receita líquida da casa
   document.getElementById('ins-final-custo').textContent = 'R$ ' + fmt.brl(receitaLiquidaCasa);
-  document.getElementById('ins-final-custo-desc').innerHTML = `Serviços líq R$ ${fmt.brl(totalSalao)} + Produtos líq R$ ${fmt.brl(totalProductNet)} <span style="display:block;margin-top:4px;color:var(--text-dim)">após pagar R$ ${fmt.brl(totalProf)} de comissão e R$ ${fmt.brl(barbersList.reduce((s,b)=>s+(b.productBonus||0),0))} de bônus</span>`;
+  const _bonusTotal = barbersList.reduce((s,b)=>s+(b.productBonus||0),0);
+  document.getElementById('ins-final-custo-desc').innerHTML = `Serviços líq R$ ${fmt.brl(totalSalao)} + Produtos líq R$ ${fmt.brl(totalProductNet)} ${fidelidadeValor > 0 ? `− Fidelidade R$ ${fmt.brl(fidelidadeValor)}` : ''} <span style="display:block;margin-top:4px;color:var(--text-dim)">após pagar R$ ${fmt.brl(totalProf)} de comissão e R$ ${fmt.brl(_bonusTotal)} de bônus</span>`;
 
   const finalEl = document.getElementById('ins-final-result');
   finalEl.textContent = (finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(finalResult));
@@ -3800,15 +3834,29 @@ function renderCaixaSection(){
   // Ordena por valor desc
   const sorted = [...RAW_CAIXA].sort((a,b) => b.valorFaturado - a.valorFaturado);
 
-  document.getElementById('caixa-section-meta').textContent = `Total bruto: R$ ${fmt.brl(total)} · ${totalQtd} pagamentos · R$ ${fmt.brl(totalTaxa)} em taxas`;
+  // Identifica fidelidade (não é dinheiro real)
+  const fidelidadeRow = RAW_CAIXA.find(r => String(r.forma||'').toLowerCase().trim() === 'fidelidade');
+  const fidelidadeValorLocal = fidelidadeRow ? fidelidadeRow.valorFaturado : 0;
+  const totalDinheiroReal = total - fidelidadeValorLocal;
+
+  document.getElementById('caixa-section-meta').textContent = fidelidadeValorLocal > 0
+    ? `Bruto R$ ${fmt.brl(total)} · Em dinheiro real R$ ${fmt.brl(totalDinheiroReal)} · ${totalQtd} pagamentos`
+    : `Total bruto: R$ ${fmt.brl(total)} · ${totalQtd} pagamentos · R$ ${fmt.brl(totalTaxa)} em taxas`;
 
   // Renderiza linhas
   const rows = sorted.map((r, i) => {
     const pct = total > 0 ? (r.valorFaturado / total * 100).toFixed(1).replace('.', ',') : '0';
+    const isFidelidade = String(r.forma||'').toLowerCase().trim() === 'fidelidade';
+    const rowStyle = isFidelidade
+      ? 'opacity:.6;background:rgba(184,54,42,.04)'
+      : '';
+    const formaLabel = isFidelidade
+      ? `${r.forma} <span style="font-family:var(--mono);font-size:9px;color:var(--red);letter-spacing:.15em;text-transform:uppercase;margin-left:6px">não é dinheiro</span>`
+      : r.forma;
     return `
-      <div style="display:grid;grid-template-columns:30px 1.5fr 70px 1fr 1fr 1fr;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:30px 1.5fr 70px 1fr 1fr 1fr;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);${rowStyle}">
         <div style="font-family:var(--mono);color:var(--gold);font-weight:700;font-size:12px">${String(i+1).padStart(2,'0')}</div>
-        <div style="font-family:var(--display);font-size:15px;color:var(--text)">${r.forma}</div>
+        <div style="font-family:var(--display);font-size:15px;color:var(--text)">${formaLabel}</div>
         <div style="font-family:var(--mono);font-size:13px;color:var(--text-mute);text-align:center">${r.qtdPagamentos}×</div>
         <div style="text-align:right;font-family:var(--mono);font-size:13px;color:var(--text-mute)">${r.taxa > 0 ? '−R$ ' + fmt.brl(r.taxa) : '—'}</div>
         <div style="text-align:right;font-family:var(--mono);font-size:13px;color:var(--text-dim)">R$ ${fmt.brl(r.faturadoMenosTaxa)}</div>
@@ -3841,6 +3889,17 @@ function renderCaixaSection(){
           <div style="font-family:var(--display);font-size:22px;color:var(--gold);font-weight:700">R$ ${fmt.brl(total)}</div>
         </div>
       </div>
+      ${fidelidadeValorLocal > 0 ? `
+      <div style="display:grid;grid-template-columns:30px 1.5fr 70px 1fr 1fr 1fr;gap:16px;padding:16px 20px;background:rgba(212,175,106,.12);border-top:1px solid var(--gold-soft)">
+        <div></div>
+        <div style="font-family:var(--display);font-size:14px;color:var(--text);font-weight:500">Em dinheiro real <span style="font-family:var(--mono);font-size:9px;color:var(--text-mute);letter-spacing:.18em;text-transform:uppercase;margin-left:6px">total − fidelidade</span></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div style="text-align:right">
+          <div style="font-family:var(--display);font-size:24px;color:var(--text);font-weight:700">R$ ${fmt.brl(totalDinheiroReal)}</div>
+        </div>
+      </div>` : ''}
     </div>
     <div style="text-align:center;margin-top:20px">
       <button onclick="triggerCaixaLaterUpload()" style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;background:transparent;color:var(--gold);border:1px solid var(--gold-soft);padding:8px 14px;cursor:pointer">↻ Substituir arquivo do caixa</button>
