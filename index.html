@@ -780,7 +780,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v7.1</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v7.3</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -926,9 +926,12 @@ window.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
 
-    <!-- Linha 2.5: Cortesias e Fidelidade -->
+    <!-- Linha 2.5: Cortesias e Fidelidade (INFORMACIONAL, não soma) -->
     <div id="ins-courtesy-block" style="display:none">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin:24px 0 12px">Cortesias e fidelidade · <span style="color:var(--text-mute);font-weight:normal">valores que a casa absorveu</span></div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin:32px 0 12px">Cortesias e fidelidade · <span style="color:var(--text-mute);font-weight:normal">informacional, NÃO soma na receita</span></div>
+      <div style="background:rgba(212,175,106,.04);border-left:2px solid var(--gold-soft);padding:14px 18px;margin-bottom:18px;font-family:var(--body);font-size:13px;color:var(--text-dim);line-height:1.6">
+        <strong style="color:var(--text);font-weight:500">Atenção:</strong> esses valores são apenas referência. Os cortes pagos com fidelidade já estão dentro do Caixa Geral como forma de pagamento. <strong>NÃO some esses valores com Serviços/Produtos</strong> — vai duplicar a conta.
+      </div>
       <div class="insights-grid">
         <div class="insight">
           <div class="insight-label">Cortes por fidelidade</div>
@@ -941,26 +944,61 @@ window.addEventListener('DOMContentLoaded', function(){
           <div class="insight-desc" id="ins-desc-caixa-desc">—</div>
         </div>
         <div class="insight">
-          <div class="insight-label">Faturamento equivalente cheio</div>
+          <div class="insight-label">Pontos acumulados (cashback)</div>
           <div class="insight-value"><em>R$</em> <span id="ins-fat-cheio">—</span></div>
           <div class="insight-desc" id="ins-fat-cheio-desc">—</div>
         </div>
       </div>
     </div>
 
-    <!-- Linha 3: Resultado final -->
-    <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin:24px 0 12px">Resultado final do mês</div>
-    <div style="background:rgba(22,22,22,.5);border:1px solid var(--border);padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center">
+    <!-- CONCILIAÇÃO FINANCEIRA: Excel vs Caixa Geral -->
+    <div id="ins-reconciliation-block" style="display:none">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin:32px 0 12px">Conciliação financeira · <span style="color:var(--text-mute);font-weight:normal">Excel vs Caixa Geral</span></div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);padding:28px 32px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:20px">
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px">Lançado no Excel</div>
+            <div style="font-family:var(--display);font-size:24px;color:var(--text)" id="rec-excel">R$ —</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="rec-excel-desc">Serviços + Produtos</div>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px">Recebido no Caixa</div>
+            <div style="font-family:var(--display);font-size:24px;color:var(--gold)" id="rec-caixa">R$ —</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px">Faturamento bruto real</div>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px">Divergência</div>
+            <div style="font-family:var(--display);font-size:24px" id="rec-diff">R$ —</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="rec-diff-desc">—</div>
+          </div>
+        </div>
+        <div id="rec-explain" style="border-top:1px solid var(--border);padding-top:16px;font-family:var(--body);font-size:13px;color:var(--text-dim);line-height:1.6">—</div>
+      </div>
+    </div>
+
+    <!-- Linha 3: Resultado final - usa Caixa Geral direto -->
+    <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin:32px 0 12px">Resultado real do mês</div>
+    <div style="background:linear-gradient(135deg,rgba(212,175,106,.06),rgba(22,22,22,.5));border:1px solid var(--border-strong);padding:32px;display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:32px;align-items:center;border-radius:2px">
       <div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px">Receita total para a casa</div>
-        <div style="font-family:var(--display);font-size:28px;color:var(--gold)" id="ins-total-house">R$ —</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="ins-total-house-desc">—</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Faturamento Bruto</div>
+        <div style="font-family:var(--display);font-size:28px;color:var(--text)" id="ins-final-bruto">R$ —</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="ins-final-bruto-desc">—</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">− Saídas totais</div>
+        <div style="font-family:var(--display);font-size:28px;color:var(--text-dim)" id="ins-final-custo">R$ —</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px;line-height:1.5" id="ins-final-custo-desc">—</div>
       </div>
       <div style="text-align:right">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px">Resultado após custo fixo</div>
-        <div style="font-family:var(--display);font-size:28px" id="ins-final-result">R$ —</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">= Resultado real</div>
+        <div style="font-family:var(--display);font-size:36px" id="ins-final-result">R$ —</div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="ins-final-result-desc">—</div>
       </div>
+    </div>
+    <!-- Mantém esses elementos por compatibilidade com código que escreve neles (não exibidos) -->
+    <div style="display:none">
+      <span id="ins-total-house"></span>
+      <span id="ins-total-house-desc"></span>
     </div>
   </section>
 
@@ -2625,7 +2663,7 @@ function renderAll(minDate, maxDate){
     courtesyBlock.style.display = 'block';
     document.getElementById('ins-fidelidade').textContent = fmt.brl(totalFidelidadeUsada);
     if(fidelidadeCount > 0){
-      document.getElementById('ins-fidelidade-desc').textContent = `${fidelidadeCount} corte${fidelidadeCount>1?'s':''} pago${fidelidadeCount>1?'s':''} com fidelidade · valor do Caixa Geral`;
+      document.getElementById('ins-fidelidade-desc').textContent = `${fidelidadeCount} corte${fidelidadeCount>1?'s':''} pago${fidelidadeCount>1?'s':''} com fidelidade · já incluído no Caixa Geral`;
     } else if(RAW_CAIXA.length === 0){
       document.getElementById('ins-fidelidade-desc').textContent = `Carregue o Caixa Geral pra ver os cortes pagos com fidelidade`;
     } else {
@@ -2633,27 +2671,84 @@ function renderAll(minDate, maxDate){
     }
 
     document.getElementById('ins-desc-caixa').textContent = fmt.brl(totalCortesias);
-    document.getElementById('ins-desc-caixa-desc').textContent = `Descontos no caixa + promoções · pontos acumulados: R$ ${fmt.brl(totalPontosAcumulados)}`;
+    document.getElementById('ins-desc-caixa-desc').textContent = `Descontos manuais aplicados no caixa + estornos de promoção`;
 
-    const fatCheio = totalRevenue + totalFidelidadeUsada + totalCortesias;
-    document.getElementById('ins-fat-cheio').textContent = fmt.brl(fatCheio);
-    document.getElementById('ins-fat-cheio-desc').textContent = `Real (R$ ${fmt.brl(totalRevenue)}) + Fidelidade usada + Cortesias`;
+    // Terceiro card vira PONTOS ACUMULADOS (não mais "faturamento equivalente cheio" que confundia)
+    document.getElementById('ins-fat-cheio').textContent = fmt.brl(totalPontosAcumulados);
+    document.getElementById('ins-fat-cheio-desc').textContent = `Pontos/cashback que os clientes acumularam neste mês · NÃO é receita`;
   } else {
     courtesyBlock.style.display = 'none';
   }
 
-  // LINHA 3: Resultado final
-  const totalHouseAll = totalSalao + totalProductNet;
-  const finalResult = totalHouseAll - totalChairCost;
-  document.getElementById('ins-total-house').textContent = 'R$ ' + fmt.brl(totalHouseAll);
-  document.getElementById('ins-total-house-desc').textContent = totalProductNet > 0
-    ? `Serviços (R$ ${fmt.brl(totalSalao)}) + Produtos líquidos (R$ ${fmt.brl(totalProductNet)})`
-    : `Apenas serviços (sem produtos)`;
+  // === CONCILIAÇÃO FINANCEIRA: Excel vs Caixa Geral ===
+  const reconBlock = document.getElementById('ins-reconciliation-block');
+  if(RAW_CAIXA.length > 0){
+    reconBlock.style.display = 'block';
+    const totalExcelServicos = totalRevenue; // Total Cobrado dos serviços
+    const totalExcelProdutos = (RAW_PRODUCTS || []).reduce((s,r) => s + (r.total || 0), 0);
+    const totalExcel = totalExcelServicos + totalExcelProdutos;
+    const totalCaixa = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
+    const diff = totalExcel - totalCaixa;
+
+    document.getElementById('rec-excel').textContent = 'R$ ' + fmt.brl(totalExcel);
+    document.getElementById('rec-excel-desc').textContent = `Serviços (R$ ${fmt.brl(totalExcelServicos)}) + Produtos (R$ ${fmt.brl(totalExcelProdutos)})`;
+
+    document.getElementById('rec-caixa').textContent = 'R$ ' + fmt.brl(totalCaixa);
+
+    const diffEl = document.getElementById('rec-diff');
+    const diffDescEl = document.getElementById('rec-diff-desc');
+    const explainEl = document.getElementById('rec-explain');
+
+    if(Math.abs(diff) < 50){
+      // Bate perfeito
+      diffEl.textContent = 'R$ ' + fmt.brl(Math.abs(diff));
+      diffEl.style.color = '#5a8a3a';
+      diffDescEl.textContent = '✓ Os números batem perfeitamente';
+      explainEl.innerHTML = `<strong style="color:#5a8a3a">Tudo conferido.</strong> O que foi lançado no Excel é exatamente o que entrou no Caixa Geral.`;
+    } else if(diff > 0){
+      // Excel maior que caixa - normal
+      diffEl.textContent = '−R$ ' + fmt.brl(diff);
+      diffEl.style.color = '#b8362a';
+      const pctDiff = totalExcel > 0 ? (diff/totalExcel*100).toFixed(1).replace('.',',') : '0';
+      diffDescEl.textContent = `${pctDiff}% do lançado não entrou no caixa`;
+      explainEl.innerHTML = `<strong style="color:var(--text)">R$ ${fmt.brl(diff)} foram lançados no Excel mas não chegaram no caixa.</strong> Provavelmente: cancelamentos pós-cobrança, devoluções, ou atendimentos lançados em duplicidade. <strong>Vale investigar no Programa Salão</strong> — qualquer divergência acima de 1-2% merece atenção.`;
+    } else {
+      // Caixa maior que excel - estranho
+      diffEl.textContent = '+R$ ' + fmt.brl(Math.abs(diff));
+      diffEl.style.color = '#d4af6a';
+      diffDescEl.textContent = `Caixa recebeu mais que o lançado`;
+      explainEl.innerHTML = `<strong style="color:var(--gold)">Atenção:</strong> entraram R$ ${fmt.brl(Math.abs(diff))} a mais no caixa do que foi lançado no Excel. Pode ser pagamento de cliente antigo, lançamento avulso ou créditos de período anterior.`;
+    }
+  } else {
+    reconBlock.style.display = 'none';
+  }
+
+  // === RESULTADO REAL DO MÊS ===
+  // Conta correta: Faturamento Bruto − Comissão barbeiros − Bônus produtos − Custo Fixo
+  // OBS: Cortes por fidelidade NÃO são subtraídos (já estão dentro do Caixa Geral)
+  //      Pontos acumulados NÃO são subtraídos (é cashback futuro, não é dinheiro saindo agora)
+  //      Cortesias no caixa NÃO são subtraídas (já saíram do bruto via Total Cobrado menor)
+  const caixaTotalCalc = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
+  const usedRevenue = caixaTotalCalc > 0 ? caixaTotalCalc : (CFG.manualRevenue > 0 ? CFG.manualRevenue : totalRevenue);
+  const descontosTotal = totalProf + totalProductBonus + CFG.totalFixedCost;
+  const finalResult = usedRevenue - descontosTotal;
+
+  document.getElementById('ins-final-bruto').textContent = 'R$ ' + fmt.brl(usedRevenue);
+  document.getElementById('ins-final-bruto-desc').textContent = caixaTotalCalc > 0
+    ? 'Valor real do Caixa Geral'
+    : (CFG.manualRevenue > 0 ? 'Valor manual (do dashboard Programa Salão)' : 'Valor estimado pelo Excel de serviços');
+
+  document.getElementById('ins-final-custo').textContent = '− R$ ' + fmt.brl(descontosTotal);
+  document.getElementById('ins-final-custo-desc').innerHTML = `Comissão R$ ${fmt.brl(totalProf)} + Bônus R$ ${fmt.brl(totalProductBonus)} + Custo fixo R$ ${fmt.brl(CFG.totalFixedCost)}`;
 
   const finalEl = document.getElementById('ins-final-result');
   finalEl.textContent = (finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(finalResult));
-  finalEl.style.color = finalResult >= 0 ? '#5a8a3a' : '#c84747';
-  document.getElementById('ins-final-result-desc').textContent = `Receita total − R$ ${fmt.brl(totalChairCost)} de custo fixo`;
+  finalEl.style.color = finalResult >= 0 ? '#5a8a3a' : '#b8362a';
+  const ratio = usedRevenue > 0 ? (finalResult / usedRevenue * 100) : 0;
+  document.getElementById('ins-final-result-desc').textContent = `${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre o faturamento bruto`;
+
+  // Mantém compat com legado
+  document.getElementById('ins-total-house').textContent = 'R$ ' + fmt.brl(usedRevenue);
 
   // === Saúde Financeira (regra dos 50%) ===
   renderCaixaSection();
