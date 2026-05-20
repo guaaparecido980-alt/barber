@@ -780,7 +780,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v7.7</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v7.8</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1332,6 +1332,11 @@ window.addEventListener('DOMContentLoaded', function(){
         <input type="text" id="manual-revenue" value="" inputmode="numeric" placeholder="Ex: 215142 ou 215.142,00 — Deixe vazio pra usar o valor do Excel">
         <small style="display:block;margin-top:4px;font-size:11px;color:var(--text-mute);line-height:1.4">Sobrescreve o "Faturamento bruto" do topo do relatório. Use o número do card <strong>"Produção por profissional"</strong> do dashboard (já inclui serviços + produtos). Aceita formato brasileiro (215.142,00) ou simples (215142). Os cálculos individuais por barbeiro continuam usando os dados do Excel.</small>
       </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Cortesias do mês (R$) <span style="color:var(--text-mute);font-weight:normal">— card "Cortesias" do dashboard</span></label>
+        <input type="text" id="manual-cortesias" value="" inputmode="numeric" placeholder="Ex: 4791 ou 4.791,00 — Deixe vazio se não houver cortesias">
+        <small style="display:block;margin-top:4px;font-size:11px;color:var(--text-mute);line-height:1.4">Valor de cortesias dadas pela casa no mês (aniversário, mimo do dono, etc.). <strong>Aparecem no Excel como cobradas mas a casa não recebeu esse dinheiro</strong> — é uma despesa real. Pegue do card <strong>"Cortesias"</strong> do dashboard do Programa Salão. Aceita formato brasileiro (4.791,00) ou simples (4791).</small>
+      </div>
     </div>
 
     <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:16px">
@@ -1373,6 +1378,7 @@ window.addEventListener('DOMContentLoaded', function(){
 const CFG = {
   totalFixedCost: 125133,  // Custo fixo TOTAL real do dono: consumo+invest+diversos+expediente+serviços+manutenção+financeiro+fornecedores+impostos+retiradas/CLT (sem comissão)
   manualRevenue: 0,  // Override do faturamento bruto (vem do dashboard Programa Salão). 0 = usa valor calculado do Excel
+  manualCortesias: 0, // Valor de cortesias dadas pelo dono no mês (aniversários, mimos). Aparece no Excel como cobrado mas a casa não recebeu. Pega do dashboard Programa Salão.
   returnWindow: 60,
   dailyMinutes: 600,   // 10 horas úteis
   workingDays: 0,
@@ -2581,12 +2587,11 @@ function renderAll(minDate, maxDate){
     document.getElementById('exec-revenue').className = 'exec-value gold';
     document.getElementById('exec-revenue-sub').textContent = `${totalAttendances} atendimentos`;
 
-    // Resultado Real = Receita líquida da casa − Fidelidade − Custo Fixo
-    // (mesma fórmula do bloco principal "Resultado real do mês")
+    // Resultado Real = Receita líquida da casa − Fidelidade − Cortesias − Custo Fixo
     const _execProductNet = barbersList.reduce((s,b) => s + (b.productNetForHouse || 0), 0)
       + (RAW_PRODUCTS||[]).filter(r => isCaixaUser(r.usuario) && !String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0)
       + (RAW_PRODUCTS||[]).filter(r => String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0);
-    const _execReceitaLiquida = totalSalao + _execProductNet - fidelidadeValor;
+    const _execReceitaLiquida = totalSalao + _execProductNet - fidelidadeValor - (CFG.manualCortesias || 0);
     const _execFinalResult = _execReceitaLiquida - CFG.totalFixedCost;
     const resultEl = document.getElementById('exec-result');
     resultEl.textContent = (_execFinalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(_execFinalResult));
@@ -2711,64 +2716,88 @@ function renderAll(minDate, maxDate){
   const reconBlock = document.getElementById('ins-reconciliation-block');
   if(RAW_CAIXA.length > 0){
     reconBlock.style.display = 'block';
-    const totalExcelServicos = totalRevenue; // Total Cobrado dos serviços
+    const totalExcelServicos = totalRevenue;
     const totalExcelProdutos = (RAW_PRODUCTS || []).reduce((s,r) => s + (r.total || 0), 0);
     const totalExcel = totalExcelServicos + totalExcelProdutos;
     const totalCaixaBruto = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
-    const totalCaixaReal = totalCaixaBruto - fidelidadeValor; // sem fidelidade (não é dinheiro)
-    // Excel comparável: precisa tirar também os atendimentos pagos com fidelidade
-    const totalExcelReal = totalExcel - fidelidadeValor;
-    const diff = totalExcelReal - totalCaixaReal;
+    const cortesias = CFG.manualCortesias || 0;
 
-    document.getElementById('rec-excel').textContent = 'R$ ' + fmt.brl(totalExcelReal);
-    document.getElementById('rec-excel-desc').innerHTML = `Serviços (R$ ${fmt.brl(totalExcelServicos)}) + Produtos (R$ ${fmt.brl(totalExcelProdutos)})${fidelidadeValor > 0 ? `<br><span style="color:var(--text-mute)">− R$ ${fmt.brl(fidelidadeValor)} de fidelidade (pago com pontos)</span>` : ''}`;
+    // EQUAÇÃO COMPLETA:
+    // Excel (lançado) − Cortesias − Cancelamentos = Caixa (bruto, com fidelidade)
+    // Cancelamentos = Excel − Cortesias − Caixa
+    const cancelamentos = totalExcel - cortesias - totalCaixaBruto;
 
-    document.getElementById('rec-caixa').textContent = 'R$ ' + fmt.brl(totalCaixaReal);
+    document.getElementById('rec-excel').textContent = 'R$ ' + fmt.brl(totalExcel);
+    document.getElementById('rec-excel-desc').innerHTML = `Serviços R$ ${fmt.brl(totalExcelServicos)} + Produtos R$ ${fmt.brl(totalExcelProdutos)}`;
+
+    document.getElementById('rec-caixa').textContent = 'R$ ' + fmt.brl(totalCaixaBruto);
     const recCaixaDesc = document.querySelector('#ins-reconciliation-block div[id="rec-caixa"]').nextElementSibling;
     if(recCaixaDesc){
-      recCaixaDesc.innerHTML = `Faturamento bruto real${fidelidadeValor > 0 ? `<br><span style="color:var(--text-mute)">Caixa R$ ${fmt.brl(totalCaixaBruto)} − R$ ${fmt.brl(fidelidadeValor)} fidelidade</span>` : ''}`;
+      recCaixaDesc.innerHTML = `Faturamento bruto do Caixa Geral${fidelidadeValor > 0 ? `<br><span style="color:var(--text-mute)">(inclui R$ ${fmt.brl(fidelidadeValor)} de fidelidade)</span>` : ''}`;
     }
 
+    const totalDiff = totalExcel - totalCaixaBruto;
     const diffEl = document.getElementById('rec-diff');
     const diffDescEl = document.getElementById('rec-diff-desc');
     const explainEl = document.getElementById('rec-explain');
 
-    if(Math.abs(diff) < 50){
-      // Bate perfeito
-      diffEl.textContent = 'R$ ' + fmt.brl(Math.abs(diff));
-      diffEl.style.color = '#5a8a3a';
-      diffDescEl.textContent = '✓ Os números batem perfeitamente';
-      explainEl.innerHTML = `<strong style="color:#5a8a3a">Tudo conferido.</strong> O que foi lançado no Excel (descontando fidelidade) é exatamente o que entrou no caixa em dinheiro.`;
-    } else if(diff > 0){
-      // Excel maior que caixa - normal
-      diffEl.textContent = '−R$ ' + fmt.brl(diff);
-      diffEl.style.color = '#b8362a';
-      const pctDiff = totalExcelReal > 0 ? (diff/totalExcelReal*100).toFixed(1).replace('.',',') : '0';
-      diffDescEl.textContent = `${pctDiff}% do lançado não entrou no caixa`;
-      explainEl.innerHTML = `<strong style="color:var(--text)">R$ ${fmt.brl(diff)} foram lançados no Excel mas não chegaram em dinheiro no caixa.</strong> Provavelmente: cancelamentos pós-cobrança, devoluções ou atendimentos lançados em duplicidade. <strong>Vale investigar no Programa Salão</strong> — divergência acima de 1-2% merece atenção.`;
+    diffEl.textContent = '−R$ ' + fmt.brl(totalDiff);
+    diffEl.style.color = cortesias > 0 ? '#d4af6a' : '#b8362a';
+
+    if(cortesias > 0){
+      // Tem valor de cortesias informado - mostra equação completa
+      const cancAbs = Math.abs(cancelamentos);
+      const cancPct = totalExcel > 0 ? (cancAbs / totalExcel * 100).toFixed(1).replace('.',',') : '0';
+      diffDescEl.textContent = `Cortesias + Cancelamentos`;
+      explainEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:14px">
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px">Cortesias dadas</div>
+            <div style="font-family:var(--display);font-size:20px;color:var(--gold)">R$ ${fmt.brl(cortesias)}</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:4px">Aniversários, mimos do dono · informado no modal</div>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px">Cancelamentos</div>
+            <div style="font-family:var(--display);font-size:20px;color:${Math.abs(cancelamentos) < 100 ? '#5a8a3a' : (Math.abs(cancelamentos) > totalExcel * 0.02 ? '#b8362a' : '#d4af6a')}">${cancelamentos >= 0 ? '−' : '+'}R$ ${fmt.brl(cancAbs)}</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:4px">${cancPct}% do lançado · ${Math.abs(cancelamentos) < 100 ? 'ótimo' : (Math.abs(cancelamentos) > totalExcel * 0.02 ? 'investigar' : 'normal')}</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:12px">
+          <strong style="color:var(--text)">Equação:</strong> Excel R$ ${fmt.brl(totalExcel)} − Cortesias R$ ${fmt.brl(cortesias)} − Cancelamentos R$ ${fmt.brl(cancAbs)} = Caixa R$ ${fmt.brl(totalCaixaBruto)} ✓
+        </div>
+      `;
     } else {
-      // Caixa maior que excel - estranho
-      diffEl.textContent = '+R$ ' + fmt.brl(Math.abs(diff));
-      diffEl.style.color = '#d4af6a';
-      diffDescEl.textContent = `Caixa recebeu mais que o lançado`;
-      explainEl.innerHTML = `<strong style="color:var(--gold)">Atenção:</strong> entraram R$ ${fmt.brl(Math.abs(diff))} a mais no caixa do que foi lançado no Excel. Pode ser pagamento de cliente antigo, lançamento avulso ou créditos de período anterior.`;
+      // Sem cortesias informadas - mostra mensagem orientando
+      diffDescEl.textContent = `Cortesias + Cancelamentos (não separados)`;
+      explainEl.innerHTML = `
+        <strong style="color:var(--text)">R$ ${fmt.brl(totalDiff)} foram lançados no Excel mas não chegaram no caixa.</strong> Isso inclui cortesias (cortes de aniversário, mimos do dono) + cancelamentos.
+        <div style="margin-top:10px;padding:12px 14px;background:rgba(212,175,106,.06);border-left:2px solid var(--gold-soft)">
+          💡 <strong style="color:var(--gold)">Pra separar:</strong> abra o modal <strong>⚙ Configurar parâmetros</strong> e informe o valor do card <strong>"Cortesias"</strong> do dashboard do Programa Salão. Aí o sistema vai te mostrar exatamente quanto foi cortesia e quanto foi cancelamento real.
+        </div>
+      `;
     }
   } else {
     reconBlock.style.display = 'none';
   }
 
-  // === RESULTADO REAL DO MÊS (Opção B + ajuste fidelidade) ===
-  // Fórmula: Receita retida casa (serv) + Líquido produtos − Fidelidade resgatada − Custo Fixo
+  // === RESULTADO REAL DO MÊS ===
+  // Fórmula: Receita retida casa (serv) + Líquido produtos − Fidelidade resgatada − Cortesias − Custo Fixo
   //
   // Por que subtrai fidelidade:
   // - O R$ 5.062 de "Fidelidade" no Caixa Geral NÃO é dinheiro real (cliente pagou com pontos)
-  // - Mas o barbeiro RECEBEU comissão normal sobre o corte (a casa pagou)
+  // - Mas o barbeiro RECEBEU comissão normal sobre o corte
   // - Logo, a casa "deu" esse corte de graça — é DESPESA real
-  const caixaTotalCalc = caixaTotal;  // já calculado acima
+  //
+  // Por que subtrai cortesias:
+  // - Cortesias (aniversário, mimos) aparecem no Excel como cobradas
+  // - Já estão dentro do totalSalao (receita retida)
+  // - Mas a casa NUNCA recebeu esse dinheiro — é despesa pura
+  const caixaTotalCalc = caixaTotal;
   const usedRevenue = caixaTotalCalc > 0 ? caixaRealEmDinheiro : (CFG.manualRevenue > 0 ? CFG.manualRevenue : totalRevenue);
+  const cortesiasValor = CFG.manualCortesias || 0;
 
-  // Receita líquida que entra na casa REAL (já descontando fidelidade não recebida)
-  const receitaLiquidaCasa = totalSalao + totalProductNet - fidelidadeValor;
+  // Receita líquida que entra na casa REAL
+  const receitaLiquidaCasa = totalSalao + totalProductNet - fidelidadeValor - cortesiasValor;
   const finalResult = receitaLiquidaCasa - CFG.totalFixedCost;
 
   document.getElementById('ins-final-bruto').textContent = 'R$ ' + fmt.brl(usedRevenue);
@@ -2776,10 +2805,12 @@ function renderAll(minDate, maxDate){
     ? `Valor real do Caixa Geral<br><span style="color:var(--text-mute)">${fidelidadeValor > 0 ? `(${fmt.brl(caixaTotalCalc)} − ${fmt.brl(fidelidadeValor)} fidelidade)` : ''}</span>`
     : (CFG.manualRevenue > 0 ? 'Valor manual (do dashboard Programa Salão)' : 'Valor estimado pelo Excel de serviços');
 
-  // O card do meio mostra a receita líquida da casa
   document.getElementById('ins-final-custo').textContent = 'R$ ' + fmt.brl(receitaLiquidaCasa);
   const _bonusTotal = barbersList.reduce((s,b)=>s+(b.productBonus||0),0);
-  document.getElementById('ins-final-custo-desc').innerHTML = `Serviços líq R$ ${fmt.brl(totalSalao)} + Produtos líq R$ ${fmt.brl(totalProductNet)} ${fidelidadeValor > 0 ? `− Fidelidade R$ ${fmt.brl(fidelidadeValor)}` : ''} <span style="display:block;margin-top:4px;color:var(--text-dim)">após pagar R$ ${fmt.brl(totalProf)} de comissão e R$ ${fmt.brl(_bonusTotal)} de bônus</span>`;
+  const descParts = [`Serv líq R$ ${fmt.brl(totalSalao)}`, `+ Prod líq R$ ${fmt.brl(totalProductNet)}`];
+  if(fidelidadeValor > 0) descParts.push(`− Fidelidade R$ ${fmt.brl(fidelidadeValor)}`);
+  if(cortesiasValor > 0) descParts.push(`− Cortesias R$ ${fmt.brl(cortesiasValor)}`);
+  document.getElementById('ins-final-custo-desc').innerHTML = `${descParts.join(' ')} <span style="display:block;margin-top:4px;color:var(--text-dim)">após R$ ${fmt.brl(totalProf)} de comissão + R$ ${fmt.brl(_bonusTotal)} de bônus</span>`;
 
   const finalEl = document.getElementById('ins-final-result');
   finalEl.textContent = (finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(finalResult));
@@ -2787,7 +2818,6 @@ function renderAll(minDate, maxDate){
   const ratio = usedRevenue > 0 ? (finalResult / usedRevenue * 100) : 0;
   document.getElementById('ins-final-result-desc').innerHTML = `Receita líquida R$ ${fmt.brl(receitaLiquidaCasa)} − Custo fixo R$ ${fmt.brl(CFG.totalFixedCost)}<br>${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre faturamento bruto`;
 
-  // Mantém compat com legado
   document.getElementById('ins-total-house').textContent = 'R$ ' + fmt.brl(receitaLiquidaCasa);
 
   // === Saúde Financeira (regra dos 50%) ===
@@ -4187,6 +4217,7 @@ function openConfig(){
   document.getElementById('return-window').value = CFG.returnWindow;
   document.getElementById('daily-minutes').value = CFG.dailyMinutes;
   document.getElementById('manual-revenue').value = (CFG.manualRevenue && CFG.manualRevenue > 0) ? CFG.manualRevenue : '';
+  document.getElementById('manual-cortesias').value = (CFG.manualCortesias && CFG.manualCortesias > 0) ? CFG.manualCortesias : '';
 
   renderCustomTimesList();
   renderDaysOffList();
@@ -4309,6 +4340,7 @@ function applyConfig(){
   CFG.dailyMinutes = parseInt(document.getElementById('daily-minutes').value) || 600;
   CFG.workingDays = parseInt(document.getElementById('working-days').value) || CFG.workingDays;
   CFG.manualRevenue = parseBRL(document.getElementById('manual-revenue').value);
+  CFG.manualCortesias = parseBRL(document.getElementById('manual-cortesias').value);
 
   // Tempos custom
   const newCustom = {};
