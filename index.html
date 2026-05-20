@@ -780,7 +780,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v7.3</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v7.4</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -976,23 +976,23 @@ window.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
 
-    <!-- Linha 3: Resultado final - usa Caixa Geral direto -->
+    <!-- Linha 3: Resultado final - usa Receita Líquida da Casa - Custo Fixo (Opção B) -->
     <div style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin:32px 0 12px">Resultado real do mês</div>
-    <div style="background:linear-gradient(135deg,rgba(212,175,106,.06),rgba(22,22,22,.5));border:1px solid var(--border-strong);padding:32px;display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:32px;align-items:center;border-radius:2px">
+    <div style="background:linear-gradient(135deg,rgba(212,175,106,.06),rgba(22,22,22,.5));border:1px solid var(--border-strong);padding:32px;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:32px;align-items:center;border-radius:2px">
       <div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Faturamento Bruto</div>
         <div style="font-family:var(--display);font-size:28px;color:var(--text)" id="ins-final-bruto">R$ —</div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="ins-final-bruto-desc">—</div>
       </div>
       <div style="text-align:center">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">− Saídas totais</div>
-        <div style="font-family:var(--display);font-size:28px;color:var(--text-dim)" id="ins-final-custo">R$ —</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Receita líquida da casa</div>
+        <div style="font-family:var(--display);font-size:28px;color:var(--gold)" id="ins-final-custo">R$ —</div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px;line-height:1.5" id="ins-final-custo-desc">—</div>
       </div>
       <div style="text-align:right">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">= Resultado real</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">− Custo fixo = Resultado</div>
         <div style="font-family:var(--display);font-size:36px" id="ins-final-result">R$ —</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px" id="ins-final-result-desc">—</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:6px;line-height:1.5" id="ins-final-result-desc">—</div>
       </div>
     </div>
     <!-- Mantém esses elementos por compatibilidade com código que escreve neles (não exibidos) -->
@@ -2549,22 +2549,17 @@ function renderAll(minDate, maxDate){
     document.getElementById('exec-revenue').className = 'exec-value gold';
     document.getElementById('exec-revenue-sub').textContent = `${totalAttendances} atendimentos`;
 
-    // Resultado (depois do custo fixo)
-    // Calcula resultado final
-    const _totalChairCost = barbersList.reduce((s,b) => s + b.chairCostProrated, 0);
-    const _totalProductNet = barbersList.reduce((s,b) => s + (b.productNetForHouse || 0), 0);
-    const _caixaProdsRevenue = RAW_PRODUCTS
-      .filter(r => isCaixaUser(r.usuario) && !String(r.estoque||'').toLowerCase().includes('bebida'))
-      .reduce((s,r) => s + r.total, 0);
-    const _bebidasRevenue = RAW_PRODUCTS
-      .filter(r => String(r.estoque||'').toLowerCase().includes('bebida'))
-      .reduce((s,r) => s + r.total, 0);
-    const _totalHouse = totalSalao + _totalProductNet + _caixaProdsRevenue + _bebidasRevenue;
-    const _finalResult = _totalHouse - _totalChairCost;
+    // Resultado Real = Receita líquida da casa − Custo Fixo
+    // (mesma fórmula do bloco principal "Resultado real do mês" - Opção B)
+    const _execProductNet = barbersList.reduce((s,b) => s + (b.productNetForHouse || 0), 0)
+      + (RAW_PRODUCTS||[]).filter(r => isCaixaUser(r.usuario) && !String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0)
+      + (RAW_PRODUCTS||[]).filter(r => String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0);
+    const _execReceitaLiquida = totalSalao + _execProductNet;
+    const _execFinalResult = _execReceitaLiquida - CFG.totalFixedCost;
     const resultEl = document.getElementById('exec-result');
-    resultEl.textContent = (_finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(_finalResult));
-    resultEl.className = 'exec-value ' + (_finalResult >= 0 ? 'pos' : 'neg');
-    const ratio = displayRevenue > 0 ? (_finalResult / displayRevenue * 100) : 0;
+    resultEl.textContent = (_execFinalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(_execFinalResult));
+    resultEl.className = 'exec-value ' + (_execFinalResult >= 0 ? 'pos' : 'neg');
+    const ratio = displayRevenue > 0 ? (_execFinalResult / displayRevenue * 100) : 0;
     document.getElementById('exec-result-sub').textContent = `${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre faturamento`;
 
     // Destaque: barbeiro com maior margem positiva (não afastado)
@@ -2723,32 +2718,43 @@ function renderAll(minDate, maxDate){
     reconBlock.style.display = 'none';
   }
 
-  // === RESULTADO REAL DO MÊS ===
-  // Conta correta: Faturamento Bruto − Comissão barbeiros − Bônus produtos − Custo Fixo
-  // OBS: Cortes por fidelidade NÃO são subtraídos (já estão dentro do Caixa Geral)
-  //      Pontos acumulados NÃO são subtraídos (é cashback futuro, não é dinheiro saindo agora)
-  //      Cortesias no caixa NÃO são subtraídas (já saíram do bruto via Total Cobrado menor)
+  // === RESULTADO REAL DO MÊS (Opção B - consistente com Margem após custo das cadeiras) ===
+  // Fórmula: Receita retida da casa (serviços) + Líquido total produtos − Custo Fixo
+  //
+  // Por que essa fórmula:
+  // - totalSalao = Total Cobrado serviços − Comissão paga aos barbeiros = R$ 105.397 (o que SOBRA pra casa)
+  // - totalProductNet = R$ 14.664 (Barbeiros líq + Caixa + Bebidas)
+  // - Custo Fixo = R$ 125.133 (CLT, retiradas, estrutura)
+  //
+  // OBS: Não usa Caixa Geral aqui porque os R$ 6.197 de divergência (Excel vs Caixa)
+  // são cancelamentos/devoluções já explicados na seção Conciliação Financeira acima.
+  //
+  // O Faturamento Bruto MOSTRADO no card continua sendo o Caixa Geral (verdade absoluta),
+  // mas o resultado usa a receita líquida da casa (consistente com a Margem do Resumo Financeiro).
   const caixaTotalCalc = RAW_CAIXA.reduce((s,r) => s + r.valorFaturado, 0);
   const usedRevenue = caixaTotalCalc > 0 ? caixaTotalCalc : (CFG.manualRevenue > 0 ? CFG.manualRevenue : totalRevenue);
-  const descontosTotal = totalProf + totalProductBonus + CFG.totalFixedCost;
-  const finalResult = usedRevenue - descontosTotal;
+
+  // Receita líquida que entra na casa (serviços já sem comissão + produtos líquidos)
+  const receitaLiquidaCasa = totalSalao + totalProductNet;
+  const finalResult = receitaLiquidaCasa - CFG.totalFixedCost;
 
   document.getElementById('ins-final-bruto').textContent = 'R$ ' + fmt.brl(usedRevenue);
   document.getElementById('ins-final-bruto-desc').textContent = caixaTotalCalc > 0
     ? 'Valor real do Caixa Geral'
     : (CFG.manualRevenue > 0 ? 'Valor manual (do dashboard Programa Salão)' : 'Valor estimado pelo Excel de serviços');
 
-  document.getElementById('ins-final-custo').textContent = '− R$ ' + fmt.brl(descontosTotal);
-  document.getElementById('ins-final-custo-desc').innerHTML = `Comissão R$ ${fmt.brl(totalProf)} + Bônus R$ ${fmt.brl(totalProductBonus)} + Custo fixo R$ ${fmt.brl(CFG.totalFixedCost)}`;
+  // O card do meio mostra a receita líquida da casa
+  document.getElementById('ins-final-custo').textContent = 'R$ ' + fmt.brl(receitaLiquidaCasa);
+  document.getElementById('ins-final-custo-desc').innerHTML = `Serviços líq R$ ${fmt.brl(totalSalao)} + Produtos líq R$ ${fmt.brl(totalProductNet)} <span style="display:block;margin-top:4px;color:var(--text-dim)">após pagar R$ ${fmt.brl(totalProf)} de comissão e R$ ${fmt.brl(barbersList.reduce((s,b)=>s+(b.productBonus||0),0))} de bônus</span>`;
 
   const finalEl = document.getElementById('ins-final-result');
   finalEl.textContent = (finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(finalResult));
   finalEl.style.color = finalResult >= 0 ? '#5a8a3a' : '#b8362a';
   const ratio = usedRevenue > 0 ? (finalResult / usedRevenue * 100) : 0;
-  document.getElementById('ins-final-result-desc').textContent = `${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre o faturamento bruto`;
+  document.getElementById('ins-final-result-desc').innerHTML = `Receita líquida R$ ${fmt.brl(receitaLiquidaCasa)} − Custo fixo R$ ${fmt.brl(CFG.totalFixedCost)}<br>${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre faturamento bruto`;
 
   // Mantém compat com legado
-  document.getElementById('ins-total-house').textContent = 'R$ ' + fmt.brl(usedRevenue);
+  document.getElementById('ins-total-house').textContent = 'R$ ' + fmt.brl(receitaLiquidaCasa);
 
   // === Saúde Financeira (regra dos 50%) ===
   renderCaixaSection();
