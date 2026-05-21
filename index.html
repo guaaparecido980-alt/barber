@@ -12,17 +12,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
-// Fallback: se XLSX não carregou do jsdelivr, tenta unpkg
+// Fallback: se XLSX não carregou do CDN oficial, tenta jsdelivr e unpkg (mesma versão 0.20.3)
 window.addEventListener('DOMContentLoaded', function(){
   if(typeof XLSX === 'undefined'){
     var s = document.createElement('script');
-    s.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js';
     s.onerror = function(){
       // Última tentativa
       var s2 = document.createElement('script');
-      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s2.src = 'https://unpkg.com/xlsx@0.20.3/dist/xlsx.full.min.js';
       document.head.appendChild(s2);
     };
     document.head.appendChild(s);
@@ -958,7 +958,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v8.3</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v8.4</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1749,18 +1749,99 @@ function processServicesNow(file){
   generateReport();
 }
 
+// ============================================================
+// FALLBACK ROBUSTO PARA SAFARI / EXCEL DO iPad
+// Alguns arquivos (salvos pelo Excel do iPhone/iPad) usam "inline strings"
+// e NÃO têm sharedStrings.xml. O SheetJS lê esses textos como vazios.
+// Esta função lê o XML cru da planilha e extrai os dados manualmente.
+// Funciona em qualquer navegador.
+// ============================================================
+function colLetraParaNum(col){
+  let n = 0;
+  for(let i=0;i<col.length;i++) n = n*26 + (col.charCodeAt(i)-64);
+  return n-1;
+}
+function decodeXMLEntities(s){
+  return String(s)
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'")
+    .replace(/&#(\d+);/g, (m,d)=>String.fromCharCode(parseInt(d)))
+    .replace(/&amp;/g,'&');
+}
+// Recebe o texto XML de uma planilha (sheetN.xml) e devolve array de arrays (linhas x colunas)
+function parseSheetXML(xmlText){
+  const rows = {};
+  const cellRegex = /<c\s+([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  let m;
+  while((m = cellRegex.exec(xmlText)) !== null){
+    const attrs = m[1] || '';
+    const inner = m[2] || '';
+    const refMatch = attrs.match(/r="([A-Z]+)(\d+)"/);
+    if(!refMatch) continue;
+    const col = colLetraParaNum(refMatch[1]);
+    const rowNum = parseInt(refMatch[2]);
+    let val = '';
+    if(/t="inlineStr"/.test(attrs)){
+      const tMatches = inner.match(/<t[^>]*>([\s\S]*?)<\/t>/g) || [];
+      val = tMatches.map(t => t.replace(/<t[^>]*>([\s\S]*?)<\/t>/, '$1')).join('');
+    } else if(/t="str"/.test(attrs)){
+      const vMatch = inner.match(/<v[^>]*>([\s\S]*?)<\/v>/);
+      if(vMatch) val = vMatch[1];
+    } else {
+      const vMatch = inner.match(/<v[^>]*>([\s\S]*?)<\/v>/);
+      if(vMatch) val = vMatch[1];
+    }
+    val = decodeXMLEntities(val);
+    if(!rows[rowNum]) rows[rowNum] = {};
+    rows[rowNum][col] = val;
+  }
+  const rowKeys = Object.keys(rows).map(Number);
+  if(rowKeys.length === 0) return [];
+  const maxRow = Math.max(...rowKeys);
+  let maxCol = 0;
+  Object.values(rows).forEach(r => { Object.keys(r).forEach(c => { if(+c > maxCol) maxCol = +c; }); });
+  const result = [];
+  for(let r=1; r<=maxRow; r++){
+    const row = [];
+    for(let c=0; c<=maxCol; c++){
+      row.push(rows[r] && rows[r][c] !== undefined ? rows[r][c] : '');
+    }
+    result.push(row);
+  }
+  return result;
+}
+// Pega o XML cru da primeira planilha de um workbook lido com bookFiles:true
+function getSheetXMLFromWorkbook(wb){
+  if(!wb.files) return null;
+  // Acha o primeiro sheet (sheet1.xml, sheet2.xml...)
+  const sheetKey = Object.keys(wb.files).find(k => /worksheets\/sheet\d+\.xml$/i.test(k));
+  if(!sheetKey) return null;
+  const content = wb.files[sheetKey].content;
+  if(!content) return null;
+  // content é array de bytes -> decodifica como UTF-8
+  try {
+    if(typeof TextDecoder !== 'undefined'){
+      return new TextDecoder('utf-8').decode(new Uint8Array(content));
+    }
+  } catch(e){}
+  // fallback manual
+  let s = '';
+  for(let i=0;i<content.length;i++) s += String.fromCharCode(content[i]);
+  try { return decodeURIComponent(escape(s)); } catch(e){ return s; }
+}
+
 function readServicesFile(file, callback){
   const reader = new FileReader();
   reader.onload = ev => {
     try{
-      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true});
+      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true, bookFiles:true});
       const ws = wb.Sheets[wb.SheetNames[0]];
 
       // Lê células diretamente. Para datas, o texto formatado (cell.w) é mais confiável
       // que o valor bruto (cell.v) que pode vir como serial Excel. Mas no Safari o .w
       // às vezes vem vazio, então temos fallback pros dois.
       const range = XLSX.utils.decode_range(ws['!ref']);
-      const allRows = [];
+      let allRows = [];
       for(let r = range.s.r; r <= range.e.r; r++){
         const row = [];
         for(let c = range.s.c; c <= range.e.c; c++){
@@ -1788,6 +1869,27 @@ function readServicesFile(file, callback){
           }
         }
         allRows.push(row);
+      }
+
+      // DETECÇÃO DE BUG INLINE STRING (Excel do iPad): se a maioria das células de
+      // texto veio vazia mas o arquivo tem muitas linhas, o SheetJS falhou ao ler
+      // inline strings. Reconstrói lendo o XML cru da planilha.
+      let textosVazios = 0, textosTotal = 0;
+      for(let i = 0; i < Math.min(allRows.length, 30); i++){
+        [1,4,6].forEach(c => { // Cliente, Serviço, Usuário
+          textosTotal++;
+          if(!String((allRows[i]||[])[c]||'').trim()) textosVazios++;
+        });
+      }
+      if(textosTotal > 0 && textosVazios / textosTotal > 0.7){
+        const xmlText = getSheetXMLFromWorkbook(wb);
+        if(xmlText){
+          const parsed = parseSheetXML(xmlText);
+          if(parsed && parsed.length > 0){
+            allRows = parsed;
+            console.log('✅ Fallback inline-string ativado. Linhas recuperadas do XML:', allRows.length);
+          }
+        }
       }
 
       // Detecção dinâmica de cabeçalho - tolerante a acentos
@@ -1992,7 +2094,7 @@ function readProductsFile(file, callback){
   const reader = new FileReader();
   reader.onload = ev => {
     try{
-      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true});
+      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true, bookFiles:true});
       console.log('📦 Abas do Excel de produtos:', wb.SheetNames);
       const ws = wb.Sheets[wb.SheetNames[0]];
 
@@ -2001,7 +2103,7 @@ function readProductsFile(file, callback){
       console.log('📦 Range do sheet:', ws['!ref'], 'Linhas:', range.e.r + 1, 'Cols:', range.e.c + 1);
 
       // Lê todas as linhas. Datas: prioriza conversão correta (tipo 'd' ou Date).
-      const allRows = [];
+      let allRows = [];
       for(let r = range.s.r; r <= range.e.r; r++){
         const row = [];
         for(let c = range.s.c; c <= range.e.c; c++){
@@ -2028,6 +2130,25 @@ function readProductsFile(file, callback){
         allRows.push(row);
       }
       console.log('📦 Total de linhas lidas direto das células:', allRows.length);
+
+      // FALLBACK inline string (Excel do iPad): detecta textos vazios e relê do XML
+      let pTextosVazios = 0, pTextosTotal = 0;
+      for(let i = 0; i < Math.min(allRows.length, 30); i++){
+        [1,4,6].forEach(c => { // Cliente, Produto, Usuário
+          pTextosTotal++;
+          if(!String((allRows[i]||[])[c]||'').trim()) pTextosVazios++;
+        });
+      }
+      if(pTextosTotal > 0 && pTextosVazios / pTextosTotal > 0.7){
+        const xmlText = getSheetXMLFromWorkbook(wb);
+        if(xmlText){
+          const parsed = parseSheetXML(xmlText);
+          if(parsed && parsed.length > 0){
+            allRows = parsed;
+            console.log('📦 ✅ Fallback inline-string ativado. Linhas recuperadas:', allRows.length);
+          }
+        }
+      }
 
       // Procura linha que tem "Data" e "Usuário" - essa é o cabeçalho real
       // Normaliza tirando acentos para ser mais tolerante
