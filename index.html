@@ -958,7 +958,7 @@ window.addEventListener('DOMContentLoaded', function(){
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v8.1</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v8.2</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1782,40 +1782,69 @@ function readServicesFile(file, callback){
       // Detecção dinâmica de cabeçalho - tolerante a acentos
       const normalize = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       let headerIdx = -1;
-      for(let i = 0; i < Math.min(allRows.length, 8); i++){
+      for(let i = 0; i < Math.min(allRows.length, 10); i++){
         const row = allRows[i] || [];
         const rowStr = row.map(normalize).join('|');
-        if(rowStr.includes('data') && rowStr.includes('usuario') && rowStr.includes('servico')){
+        // Aceita qualquer combinação de 2 das 3 palavras-chave (mais tolerante)
+        const temData = rowStr.includes('data');
+        const temUsuario = rowStr.includes('usuario');
+        const temServico = rowStr.includes('servico') || rowStr.includes('cliente');
+        if((temData && temUsuario) || (temData && temServico) || (temUsuario && temServico)){
           headerIdx = i;
           break;
         }
       }
 
-      // FALLBACK SAFARI iOS: se a detecção por nome falhar (textos de cabeçalho vieram vazios,
-      // bug conhecido do Safari ao ler shared/inline strings de Excel), usa posição fixa.
-      // Estrutura SEMPRE igual no Programa Salão:
-      // Linha 0: título | Linha 1: cabeçalho | Linha 2+: dados
-      // Colunas: 0=Data 1=Cliente 2=Telefone 3=Email 4=Serviço 5=Especialidade 6=Usuário 7=Pacote 8=Promoção ...
-      let usandoFallback = false;
+      // FALLBACK 1: Procura a linha de DADOS de várias formas possíveis.
+      // O Safari pode ler datas como: string "dd/mm/aaaa", objeto Date, ou número serial Excel.
+      // A linha de dados é a primeira que tem conteúdo "tipo data" na coluna 0 E texto nas colunas seguintes.
       if(headerIdx === -1){
-        // Procura a primeira linha que tenha uma data (dd/mm/aaaa) na coluna 0 - é onde começam os dados
         let primeiraLinhaDados = -1;
-        for(let i = 0; i < Math.min(allRows.length, 8); i++){
-          const c0 = String((allRows[i]||[])[0]||'').trim();
-          if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(c0)){
+        for(let i = 1; i < Math.min(allRows.length, 12); i++){
+          const row = allRows[i] || [];
+          const c0 = row[0];
+          const c0str = String(c0||'').trim();
+          // Detecta data em qualquer formato comum
+          const ehData =
+            /^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(c0str) ||      // 02/05/2026
+            /^\d{4}-\d{2}-\d{2}/.test(c0str) ||                // 2026-05-02
+            c0 instanceof Date ||                              // objeto Date
+            (typeof c0 === 'number' && c0 > 40000 && c0 < 60000); // serial Excel (datas ~2009-2064)
+          // A linha também precisa ter algo nas outras colunas (não ser linha vazia/total)
+          const temConteudo = row.slice(1, 8).some(v => String(v||'').trim().length > 0);
+          if(ehData && temConteudo){
             primeiraLinhaDados = i;
             break;
           }
         }
         if(primeiraLinhaDados > 0){
-          headerIdx = primeiraLinhaDados - 1; // cabeçalho é a linha anterior aos dados
-          usandoFallback = true;
-          console.log('⚠️ Cabeçalho vazio (Safari). Usando posição fixa de colunas. Header na linha', headerIdx);
+          headerIdx = primeiraLinhaDados - 1;
+          console.log('⚠️ Detecção por nome falhou. Linha de dados encontrada em', primeiraLinhaDados, '- usando posição fixa.');
+        }
+      }
+
+      // FALLBACK 2: se ainda não achou, assume estrutura padrão (linha 0 = título, linha 1 = cabeçalho, linha 2+ = dados)
+      if(headerIdx === -1 && allRows.length > 2){
+        // Verifica se a linha 2 tem cara de dados (qualquer conteúdo em pelo menos 4 colunas)
+        const linha2 = allRows[2] || [];
+        const colsComConteudo = linha2.filter(v => String(v||'').trim().length > 0).length;
+        if(colsComConteudo >= 4){
+          headerIdx = 1; // assume cabeçalho na linha 1 (segunda linha), dados a partir da linha 2
+          console.log('⚠️ Fallback 2: assumindo estrutura padrão (cabeçalho na 2ª linha).');
         }
       }
 
       if(headerIdx === -1){
-        alert('Não foi possível identificar as colunas no arquivo de serviços.\n\nDica: se você está no Safari do iPhone/iPad e o arquivo veio do iCloud, tente baixá-lo primeiro pro app Arquivos e subir de lá. Ou use o Chrome.');
+        // Diagnóstico detalhado pra ajudar a entender o problema
+        let diag = 'Não foi possível identificar as colunas no arquivo de serviços.\n\n';
+        diag += 'DIAGNÓSTICO (mostre isso pro suporte):\n';
+        diag += 'Total de linhas lidas: ' + allRows.length + '\n';
+        for(let i = 0; i < Math.min(allRows.length, 4); i++){
+          const row = allRows[i] || [];
+          const preview = row.slice(0, 5).map(v => String(v||'').slice(0,15)).join(' | ');
+          diag += 'Linha ' + i + ': [' + preview + ']\n';
+        }
+        alert(diag);
         return;
       }
 
@@ -1824,9 +1853,6 @@ function readServicesFile(file, callback){
         'Data': 0, 'Cliente': 1, 'Telefone': 2, 'Email': 3, 'Serviço': 4,
         'Especialidade': 5, 'Usuário': 6, 'Pacote': 7, 'Promoção': 8
       };
-      // Colunas financeiras: posições variam, então busca por nome quando possível.
-      // No Programa Salão a ordem padrão após Promoção (col 8) é:
-      // 9=Total Cobrado do Cliente? Varia. Vamos detectar por nome E ter fallback.
       const headers = allRows[headerIdx].map(h => String(h||'').trim());
 
       // Função que pega o valor de uma coluna pelo nome (com fallback de posição)
@@ -1859,15 +1885,40 @@ function readServicesFile(file, callback){
 
       const dataRows = allRows.slice(headerIdx + 1);
 
+      // Converte serial do Excel (número) pra Date. Excel conta dias desde 1900-01-01.
+      function excelSerialToDate(serial){
+        // 25569 = dias entre 1900-01-01 e 1970-01-01 (epoch Unix)
+        const utcDays = serial - 25569;
+        const ms = utcDays * 86400 * 1000;
+        return new Date(ms);
+      }
+
+      function parseData(dataRaw){
+        if(!dataRaw && dataRaw !== 0) return null;
+        if(dataRaw instanceof Date) return dataRaw;
+        if(typeof dataRaw === 'number' && dataRaw > 40000 && dataRaw < 60000){
+          return excelSerialToDate(dataRaw);
+        }
+        const s = String(dataRaw).trim();
+        // formato dd/mm/aaaa
+        if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)){
+          const parts = s.split('/');
+          let ano = parseInt(parts[2]);
+          if(ano < 100) ano += 2000;
+          return new Date(ano, parseInt(parts[1])-1, parseInt(parts[0]));
+        }
+        // formato ISO aaaa-mm-dd
+        if(/^\d{4}-\d{2}-\d{2}/.test(s)){
+          const d = new Date(s);
+          if(!isNaN(d)) return d;
+        }
+        return null;
+      }
+
       RAW = dataRows.map(row => {
           const dataRaw = getCol(row, 'Data');
           const usuarioRaw = getCol(row, 'Usuário');
-          let dt;
-          if(dataRaw instanceof Date) dt = dataRaw;
-          else if(typeof dataRaw === 'string'){
-            const parts = dataRaw.split('/');
-            if(parts.length === 3) dt = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
-          }
+          const dt = parseData(dataRaw);
           return {
             data: dt,
             cliente: (getCol(row,'Cliente')||'').toString().trim(),
