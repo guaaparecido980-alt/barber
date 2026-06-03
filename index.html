@@ -507,6 +507,164 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
   .risk-barber-sep:first-child{margin-top:0;border-top:none}
   .rbs-name{font-family:var(--display);font-size:18px;color:var(--gold);font-style:italic}
   .rbs-count{font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.2em;text-transform:uppercase}
+
+  /* Tabs do risco (3 categorias: grave / 1x sumiu / amarela) */
+  .risk-tabs{display:flex;gap:8px;margin:24px 0 0;flex-wrap:wrap}
+  .risk-tab{
+    flex:1;min-width:200px;
+    background:transparent;border:1px solid var(--border);
+    color:var(--text-mute);
+    padding:14px 16px;cursor:pointer;border-radius:2px;
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    transition:all .2s
+  }
+  .risk-tab:hover{border-color:var(--gold-soft);color:var(--text)}
+  .risk-tab.active{
+    background:rgba(201,169,97,.08);
+    border-color:var(--gold);
+    color:var(--text)
+  }
+  .rt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .rt-dot.crit{background:#b8362a}
+  .rt-dot.first{background:#d4a04a}
+  .rt-dot.warn{background:#c9a961}
+  .rt-label{flex:1;text-align:left;text-transform:uppercase}
+  .rt-count{
+    font-family:var(--display);font-size:18px;
+    color:var(--gold);font-style:italic;letter-spacing:0
+  }
+  .risk-tab.active .rt-count{color:var(--text)}
+
+  /* Intro de cada grupo */
+  .risk-intro{
+    padding:14px 20px;margin:20px 0;
+    font-size:12px;line-height:1.6;color:var(--text-dim);
+    border-left:2px solid var(--border)
+  }
+  .risk-intro strong{color:var(--text);display:block;margin-bottom:4px;font-size:13px}
+  .risk-intro.crit{background:rgba(184,54,42,.06);border-left-color:#b8362a}
+  .risk-intro.crit strong{color:#e8857a}
+  .risk-intro.first{background:rgba(212,160,74,.06);border-left-color:#d4a04a}
+  .risk-intro.first strong{color:#e8c08a}
+  .risk-intro.warn{background:rgba(201,169,97,.06);border-left-color:#c9a961}
+  .risk-intro.warn strong{color:var(--gold)}
+
+  @media (max-width:680px){
+    .risk-tabs{flex-direction:column}
+    .risk-tab{min-width:0}
+  }
+
+  /* ============ PERFIL DE FREQUÊNCIA ============ */
+  .freq-bar{
+    display:flex;height:36px;width:100%;
+    border-radius:2px;overflow:hidden;
+    background:rgba(0,0,0,.3);
+    border:1px solid var(--border);
+    margin-bottom:20px
+  }
+  .freq-bar-seg{
+    display:flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,.95);
+    font-family:var(--mono);font-size:11px;font-weight:600;
+    letter-spacing:.05em;
+    transition:opacity .2s;
+    cursor:default
+  }
+  .freq-bar-seg:hover{opacity:.85}
+  .freq-cards{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:1px;
+    background:var(--border);border:1px solid var(--border);
+    margin-bottom:8px
+  }
+  .freq-card{
+    background:var(--bg-card);padding:14px 16px;
+    display:flex;gap:10px;align-items:flex-start
+  }
+  .freq-dot{
+    width:10px;height:10px;border-radius:50%;
+    margin-top:4px;flex-shrink:0
+  }
+  .freq-card-body{flex:1;min-width:0}
+  .freq-label{
+    font-family:var(--mono);font-size:10px;color:var(--text-mute);
+    letter-spacing:.15em;text-transform:uppercase;
+    margin-bottom:2px
+  }
+  .freq-sub{
+    font-family:var(--mono);font-size:9px;color:var(--text-mute);
+    opacity:.6;margin-bottom:8px
+  }
+  .freq-num{font-family:var(--display);color:var(--text)}
+  .freq-num strong{font-size:24px;font-weight:400}
+  .freq-pct{
+    font-family:var(--mono);font-size:11px;color:var(--gold);
+    margin-left:6px;letter-spacing:.05em
+  }
+  .freq-rev{
+    font-family:var(--mono);font-size:10px;color:var(--text-mute);
+    margin-top:4px
+  }
+
+  /* Ranking por barbeiro */
+  .freq-rank-head{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:16px 0 12px;border-bottom:1px solid var(--border);
+    font-family:var(--display);font-size:16px;color:var(--text);
+    font-style:italic
+  }
+  .freq-rank-meta{
+    font-family:var(--mono);font-size:10px;color:var(--text-mute);
+    letter-spacing:.15em;text-transform:uppercase;font-style:normal
+  }
+  .freq-rank-list{margin-top:8px}
+  .freq-rank-row{
+    display:grid;grid-template-columns:32px 1fr 1fr 60px;
+    gap:16px;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--border)
+  }
+  .freq-rank-row:last-child{border-bottom:none}
+  .frr-pos{
+    font-family:var(--mono);font-size:11px;
+    color:var(--text-mute);letter-spacing:.1em
+  }
+  .frr-name{font-family:var(--display);font-size:16px;color:var(--text)}
+  .frr-name small{
+    display:block;font-family:var(--mono);font-size:10px;
+    color:var(--text-mute);font-style:normal;margin-top:2px
+  }
+  .frr-bar-wrap{
+    height:8px;background:rgba(0,0,0,.3);
+    border-radius:1px;overflow:hidden
+  }
+  .frr-bar{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold))}
+  .frr-pct{
+    text-align:right;font-family:var(--display);
+    font-size:18px;color:var(--gold);font-style:italic
+  }
+
+  /* Versão compacta para análise individual */
+  .freq-compact{display:flex;flex-direction:column;gap:6px}
+  .freq-compact-row{
+    display:grid;grid-template-columns:14px 1fr 50px 60px;
+    gap:10px;align-items:center;padding:6px 0
+  }
+  .freq-dot-sm{width:8px;height:8px;border-radius:50%}
+  .frc-label{font-size:13px;color:var(--text)}
+  .frc-num{text-align:right;font-family:var(--mono);font-size:13px;color:var(--text)}
+  .frc-pct{text-align:right;font-family:var(--mono);font-size:12px;color:var(--gold)}
+
+  @media (max-width:980px){
+    .freq-cards{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:480px){
+    .freq-cards{grid-template-columns:1fr}
+    .freq-rank-row{grid-template-columns:24px 1fr 50px;grid-template-areas:"pos name pct" "pos bar bar";gap:6px 12px}
+    .frr-pos{grid-area:pos}
+    .frr-name{grid-area:name}
+    .frr-pct{grid-area:pct}
+    .frr-bar-wrap{grid-area:bar;margin-top:4px}
+  }
   .risk-val{font-family:var(--mono);color:var(--text-dim)}
   .risk-val.warn{color:var(--red)}
   .risk-val.gold{color:var(--gold)}
@@ -1005,7 +1163,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v8.8</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v9.2</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1456,6 +1614,14 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         </div>
       </div>
 
+      <!-- Perfil de frequência dos clientes desse profissional -->
+      <div class="card" id="ind-frequency-card" style="margin-bottom:24px">
+        <div class="card-title">
+          <span>Frequência de retorno · <em style="color:var(--gold);font-style:italic">dos seus clientes</em></span>
+        </div>
+        <div id="ind-frequency-content"></div>
+      </div>
+
       <!-- Clientes em risco deste profissional -->
       <div class="card" id="ind-risk-card" style="margin-bottom:24px">
         <div class="card-title">
@@ -1500,6 +1666,17 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     </div>
     <div class="card">
       <div id="weekday-heatmap"></div>
+    </div>
+  </section>
+
+  <!-- PERFIL DE FREQUÊNCIA DOS CLIENTES -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Perfil de <em>frequência dos clientes</em></h2>
+      <span class="meta">Quanto retornam · semanal, quinzenal, mensal, esporádico</span>
+    </div>
+    <div class="card">
+      <div id="frequency-section"></div>
     </div>
   </section>
 
@@ -3573,6 +3750,7 @@ function renderAll(minDate, maxDate){
   try { renderTopServices(); } catch(e){ console.error('renderTopServices:', e); }
   try { renderExtrasRanking(); } catch(e){ console.error('renderExtrasRanking:', e); }
   try { renderWeekdayHeatmap(); } catch(e){ console.error('renderWeekdayHeatmap:', e); }
+  try { renderFrequencySection(); } catch(e){ console.error('renderFrequencySection:', e); }
   try { renderRiskClients(maxDate); } catch(e){ console.error('renderRiskClients:', e); }
   try { populateIndividualSelector(); } catch(e){ console.error('populateIndividualSelector:', e); }
   if(GROUPED_PREV.length > 0){
@@ -3865,6 +4043,187 @@ function renderWeekdayHeatmap(){
 }
 
 /* ============================================
+   PERFIL DE FREQUÊNCIA DOS CLIENTES
+   Classifica clientes por intervalo médio entre visitas:
+   - Toda semana (< 14 dias)
+   - Quinzenal (14-21 dias)
+   - Mensal (22-44 dias)
+   - Esporádico (45+ dias)
+   - Veio só 1 vez (sem como calcular intervalo)
+   ============================================ */
+function categorizeInterval(dates){
+  if(dates.length === 1) return 'unica';
+  const sorted = [...dates].sort((a,b) => a-b);
+  let sumIntervals = 0;
+  for(let i = 0; i < sorted.length - 1; i++){
+    sumIntervals += Math.floor((sorted[i+1] - sorted[i]) / (1000*60*60*24));
+  }
+  const avg = sumIntervals / (sorted.length - 1);
+  if(avg < 14) return 'semanal';
+  if(avg < 22) return 'quinzenal';
+  if(avg < 45) return 'mensal';
+  return 'esporadico';
+}
+
+function buildFrequencyData(filterBarberName){
+  // Por cliente (chave = telefone), pega lista de datas
+  const byClient = {};
+  GROUPED.forEach(g => {
+    if(!g.telefone) return;
+    if(filterBarberName && g.usuario !== filterBarberName) return;
+    if(!byClient[g.telefone]){
+      byClient[g.telefone] = {dates:[], barbeiros:{}, spent:0};
+    }
+    byClient[g.telefone].dates.push(g.data);
+    byClient[g.telefone].barbeiros[g.usuario] = (byClient[g.telefone].barbeiros[g.usuario]||0) + 1;
+    byClient[g.telefone].spent += g.revenue;
+  });
+
+  const counts = {semanal:0, quinzenal:0, mensal:0, esporadico:0, unica:0};
+  const revenue = {semanal:0, quinzenal:0, mensal:0, esporadico:0, unica:0};
+  let total = 0;
+
+  Object.values(byClient).forEach(c => {
+    // Se filtrando por barbeiro, considera só visitas em que ELE é o barbeiro favorito desse cliente
+    if(filterBarberName){
+      const fav = Object.entries(c.barbeiros).sort((a,b) => b[1]-a[1])[0][0];
+      if(fav !== filterBarberName) return;
+    }
+    const cat = categorizeInterval(c.dates);
+    counts[cat]++;
+    revenue[cat] += c.spent;
+    total++;
+  });
+
+  return {counts, revenue, total};
+}
+
+function renderFrequencySection(){
+  const el = document.getElementById('frequency-section');
+  if(!el) return;
+  const data = buildFrequencyData(null);
+  if(data.total === 0){
+    el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:30px">Sem dados suficientes</div>';
+    return;
+  }
+
+  // Período curto avisa
+  const periodDays = (Math.max(...RAW.map(r=>r.data.getTime())) - Math.min(...RAW.map(r=>r.data.getTime()))) / (1000*60*60*24);
+  const periodNote = periodDays < 60 ? `
+    <div style="padding:12px 16px;background:rgba(201,169,97,.05);border-left:2px solid var(--gold-soft);font-size:11px;color:var(--text-dim);margin-bottom:20px;line-height:1.5">
+      Arquivo com ${Math.round(periodDays)} dias. Para análise mais precisa de frequência, exporte <strong style="color:var(--text)">90+ dias</strong>: em períodos curtos muitos clientes mensais aparecem como "veio 1 vez".
+    </div>` : '';
+
+  const cats = [
+    {key:'semanal', label:'Toda semana', sub:'< 14 dias entre visitas', color:'#5a8a3a'},
+    {key:'quinzenal', label:'Quinzenal', sub:'14 a 21 dias', color:'#4a9cb5'},
+    {key:'mensal', label:'Mensal', sub:'22 a 44 dias', color:'#c9a961'},
+    {key:'esporadico', label:'Esporádico', sub:'45+ dias entre visitas', color:'#d4814a'},
+    {key:'unica', label:'Só 1 visita', sub:'no período', color:'#6e6a62'}
+  ];
+
+  // Barra empilhada
+  const bar = `<div class="freq-bar">${cats.map(c => {
+    const pct = (data.counts[c.key] / data.total) * 100;
+    if(pct < 0.5) return '';
+    return `<div class="freq-bar-seg" style="width:${pct}%;background:${c.color}" title="${c.label}: ${pct.toFixed(1)}%">${pct >= 6 ? pct.toFixed(0)+'%' : ''}</div>`;
+  }).join('')}</div>`;
+
+  // Cards por categoria
+  const cards = `<div class="freq-cards">${cats.map(c => {
+    const n = data.counts[c.key];
+    const pct = (n / data.total) * 100;
+    const rev = data.revenue[c.key];
+    return `<div class="freq-card">
+      <div class="freq-dot" style="background:${c.color}"></div>
+      <div class="freq-card-body">
+        <div class="freq-label">${c.label}</div>
+        <div class="freq-sub">${c.sub}</div>
+        <div class="freq-num"><strong>${n}</strong> <span class="freq-pct">${pct.toFixed(1)}%</span></div>
+        <div class="freq-rev">R$ ${fmt.brl(rev)} em receita</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+
+  // Ranking por barbeiro — % de fidelização (semanal+quinzenal+mensal)
+  const barbers = [...new Set(GROUPED.filter(g => g.telefone).map(g => g.usuario))];
+  const ranks = barbers.map(b => {
+    const d = buildFrequencyData(b);
+    const fid = d.counts.semanal + d.counts.quinzenal + d.counts.mensal;
+    const fidPct = d.total > 0 ? (fid / d.total) * 100 : 0;
+    return {name:b, total:d.total, fid, fidPct, semanal:d.counts.semanal, mensal:d.counts.mensal, unica:d.counts.unica};
+  }).filter(r => r.total >= 5).sort((a,b) => b.fidPct - a.fidPct);
+
+  const rankHtml = ranks.length === 0 ? '' : `
+    <div style="margin-top:32px">
+      <div class="freq-rank-head">
+        <span>Ranking de fidelização por profissional</span>
+        <span class="freq-rank-meta">% de clientes recorrentes (semanal + quinzenal + mensal)</span>
+      </div>
+      <div class="freq-rank-list">${ranks.map((r, i) => `
+        <div class="freq-rank-row">
+          <div class="frr-pos">${String(i+1).padStart(2,'0')}</div>
+          <div class="frr-name">${r.name}<small>${r.total} clientes</small></div>
+          <div class="frr-bar-wrap">
+            <div class="frr-bar" style="width:${r.fidPct}%"></div>
+          </div>
+          <div class="frr-pct">${r.fidPct.toFixed(0)}%</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  el.innerHTML = periodNote + bar + cards + rankHtml;
+}
+
+function renderIndividualFrequency(barberName){
+  const el = document.getElementById('ind-frequency-content');
+  if(!el) return;
+  const data = buildFrequencyData(barberName);
+  if(data.total === 0){
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-dim);font-size:13px">Sem dados suficientes pra esse profissional.</div>';
+    return;
+  }
+
+  const cats = [
+    {key:'semanal', label:'Toda semana', color:'#5a8a3a'},
+    {key:'quinzenal', label:'Quinzenal', color:'#4a9cb5'},
+    {key:'mensal', label:'Mensal', color:'#c9a961'},
+    {key:'esporadico', label:'Esporádico', color:'#d4814a'},
+    {key:'unica', label:'Só 1 visita', color:'#6e6a62'}
+  ];
+
+  const bar = `<div class="freq-bar">${cats.map(c => {
+    const pct = (data.counts[c.key] / data.total) * 100;
+    if(pct < 0.5) return '';
+    return `<div class="freq-bar-seg" style="width:${pct}%;background:${c.color}">${pct >= 8 ? pct.toFixed(0)+'%' : ''}</div>`;
+  }).join('')}</div>`;
+
+  const fid = data.counts.semanal + data.counts.quinzenal + data.counts.mensal;
+  const fidPct = (fid / data.total) * 100;
+
+  const insightText = fidPct >= 55
+    ? `<strong style="color:var(--green)">Boa fidelização.</strong> ${fidPct.toFixed(0)}% dos seus clientes voltam regularmente (semanal/quinzenal/mensal). Continue cuidando do relacionamento.`
+    : fidPct >= 40
+    ? `<strong style="color:var(--gold)">Fidelização média.</strong> ${fidPct.toFixed(0)}% voltam regularmente, mas ${data.counts.unica} clientes vieram só 1 vez. Vale tentar reativar.`
+    : `<strong style="color:#d4814a">Atenção à fidelização.</strong> Só ${fidPct.toFixed(0)}% voltam regularmente. ${data.counts.unica} de ${data.total} clientes (${(data.counts.unica/data.total*100).toFixed(0)}%) vieram uma única vez. Vale entender por que não voltam.`;
+
+  const insight = `<div style="padding:14px 18px;background:rgba(0,0,0,.2);border-left:2px solid var(--gold-soft);font-size:13px;line-height:1.6;color:var(--text-dim);margin-bottom:16px">${insightText}</div>`;
+
+  const compact = `<div class="freq-compact">${cats.map(c => {
+    const n = data.counts[c.key];
+    const pct = (n / data.total) * 100;
+    return `<div class="freq-compact-row">
+      <span class="freq-dot-sm" style="background:${c.color}"></span>
+      <span class="frc-label">${c.label}</span>
+      <span class="frc-num">${n}</span>
+      <span class="frc-pct">${pct.toFixed(1)}%</span>
+    </div>`;
+  }).join('')}</div>`;
+
+  el.innerHTML = insight + bar + compact;
+}
+
+/* ============================================
    CLIENTES EM RISCO
    ============================================ */
 function renderRiskClients(maxDate){
@@ -3885,141 +4244,210 @@ function renderRiskClients(maxDate){
     favBarber[k][g.usuario] = (favBarber[k][g.usuario] || 0) + 1;
   });
 
-  // Threshold: clientes que sumiram há 45+ dias E que vieram pelo menos 2x antes
-  const THRESHOLD_DAYS = 45;
-  document.getElementById('risk-days-label').textContent = THRESHOLD_DAYS;
+  // Thresholds:
+  // - 45+ dias parados E 2+ visitas anteriores = RISCO GRAVE (já era cliente fiel, sumiu)
+  // - 45+ dias parados E 1 visita = REATIVAÇÃO (veio uma vez, gostou ou não, sumiu)
+  // - 35-44 dias parados E 2+ visitas = ZONA AMARELA (recorrente prestes a virar risco)
+  const THRESHOLD_CRITICAL = 45;
+  const THRESHOLD_WARNING = 35;
+  document.getElementById('risk-days-label').textContent = THRESHOLD_CRITICAL;
 
-  const risk = [];
+  const riskCritical = [];   // recorrentes que sumiram (foco principal)
+  const riskFirst = [];      // 1 visita e sumiu (reativação)
+  const riskWarning = [];    // recorrentes na zona 35-44 dias
+
   Object.keys(lastVisit).forEach(k => {
     const daysSince = Math.floor((maxDate - lastVisit[k].date) / (1000*60*60*24));
-    if(daysSince >= THRESHOLD_DAYS && visitCount[k] >= 2){
-      const fav = Object.entries(favBarber[k]).sort((a,b) => b[1]-a[1])[0][0];
-      risk.push({
-        name: lastVisit[k].name,
-        phone: lastVisit[k].phone,
-        lastDate: lastVisit[k].date,
-        daysSince,
-        spent: totalSpent[k],
-        visits: visitCount[k],
-        barber: fav
-      });
+    const visits = visitCount[k];
+    const fav = Object.entries(favBarber[k]).sort((a,b) => b[1]-a[1])[0][0];
+    const entry = {
+      name: lastVisit[k].name,
+      phone: lastVisit[k].phone,
+      lastDate: lastVisit[k].date,
+      daysSince,
+      spent: totalSpent[k],
+      visits,
+      barber: fav
+    };
+    if(visits >= 2 && daysSince >= THRESHOLD_CRITICAL){
+      riskCritical.push(entry);
+    } else if(visits === 1 && daysSince >= THRESHOLD_CRITICAL){
+      riskFirst.push(entry);
+    } else if(visits >= 2 && daysSince >= THRESHOLD_WARNING && daysSince < THRESHOLD_CRITICAL){
+      riskWarning.push(entry);
     }
   });
 
-  // Ordenação: agrupa por barbeiro (alfabético) e dentro de cada barbeiro coloca os de maior gasto primeiro.
-  // Cada barbeiro vê os SEUS clientes juntos, facilitando a abordagem.
-  risk.sort((a,b) => {
-    if(a.barber !== b.barber) return a.barber.localeCompare(b.barber, 'pt-BR');
-    return b.spent - a.spent;
-  });
+  // Cada grupo ordenado por barbeiro (alfabético), maior gasto primeiro dentro do barbeiro
+  function sortByBarber(arr){
+    arr.sort((a,b) => {
+      if(a.barber !== b.barber) return a.barber.localeCompare(b.barber, 'pt-BR');
+      return b.spent - a.spent;
+    });
+  }
+  sortByBarber(riskCritical);
+  sortByBarber(riskFirst);
+  sortByBarber(riskWarning);
 
   // Expõe globalmente pra análise individual de cada barbeiro acessar
-  window.RISK_CLIENTS = risk;
+  window.RISK_CLIENTS = riskCritical;
+  window.RISK_FIRST = riskFirst;
+  window.RISK_WARNING = riskWarning;
 
   // Período curto: avisa que não dá pra calcular bem
   const periodDays = (maxDate - new Date(Math.min(...RAW.map(r=>r.data.getTime())))) / (1000*60*60*24);
-  if(periodDays < THRESHOLD_DAYS){
+  if(periodDays < THRESHOLD_CRITICAL){
     document.getElementById('risk-clients-list').innerHTML = `
       <div style="text-align:center;padding:30px 20px;color:var(--text-dim);font-size:13px;line-height:1.6">
         <div style="font-family:var(--display);font-size:20px;color:var(--gold);margin-bottom:8px">Período curto para análise</div>
         Para identificar clientes em risco com precisão, exporte pelo menos <strong style="color:var(--text)">90 dias</strong> de dados do Programa Salão.<br>
-        Hoje o arquivo cobre ${Math.round(periodDays)} dias — insuficiente para detectar quem sumiu há ${THRESHOLD_DAYS}+ dias.
+        Hoje o arquivo cobre ${Math.round(periodDays)} dias — insuficiente para detectar quem sumiu há ${THRESHOLD_CRITICAL}+ dias.
       </div>`;
     return;
   }
 
-  if(risk.length === 0){
+  const total = riskCritical.length + riskFirst.length + riskWarning.length;
+  if(total === 0){
     document.getElementById('risk-clients-list').innerHTML = `
       <div style="text-align:center;padding:30px 20px;color:var(--green);font-size:14px">
-        ✓ Nenhum cliente recorrente com sumiço prolongado detectado.
+        ✓ Nenhum cliente com sumiço detectado.
       </div>`;
     return;
   }
 
-  const totalLost = risk.reduce((s,r) => s + r.spent, 0);
-  const avgTicket = totalLost / risk.length;
+  // Totais por grupo
+  const sumCritical = riskCritical.reduce((s,r) => s + r.spent, 0);
+  const sumFirst = riskFirst.reduce((s,r) => s + r.spent, 0);
+  const sumWarning = riskWarning.reduce((s,r) => s + r.spent, 0);
+  const sumTotal = sumCritical + sumFirst + sumWarning;
 
+  // Summary global
   const summary = `
     <div class="risk-summary">
       <div class="risk-stat">
-        <div class="risk-stat-val">${risk.length}</div>
-        <div class="risk-stat-lbl">Clientes em risco</div>
+        <div class="risk-stat-val">${total}</div>
+        <div class="risk-stat-lbl">Total de oportunidades</div>
       </div>
       <div class="risk-stat">
-        <div class="risk-stat-val"><em>R$</em> ${fmt.brl(totalLost)}</div>
-        <div class="risk-stat-lbl">Já gastaram no salão</div>
+        <div class="risk-stat-val"><em>R$</em> ${fmt.brl(sumTotal)}</div>
+        <div class="risk-stat-lbl">Receita histórica em jogo</div>
       </div>
       <div class="risk-stat">
-        <div class="risk-stat-val"><em>R$</em> ${fmt.brl(avgTicket)}</div>
+        <div class="risk-stat-val"><em>R$</em> ${fmt.brl(sumTotal / total)}</div>
         <div class="risk-stat-lbl">Valor médio por cliente</div>
       </div>
     </div>
   `;
 
-  // Renderiza TODAS as linhas, agrupadas por barbeiro com separadores visuais.
-  // As linhas além das 20 primeiras ficam escondidas até clicar em "Mostrar todos".
-  const head = `<div class="risk-row head">
-    <div>Cliente</div><div>Última visita</div><div>Dias parado</div><div>Já gastou</div><div></div>
+  // Tabs
+  const tabs = `
+    <div class="risk-tabs">
+      <button class="risk-tab active" data-tab="critical" onclick="switchRiskTab('critical')">
+        <span class="rt-dot crit"></span>
+        <span class="rt-label">Em risco grave</span>
+        <span class="rt-count">${riskCritical.length}</span>
+      </button>
+      <button class="risk-tab" data-tab="first" onclick="switchRiskTab('first')">
+        <span class="rt-dot first"></span>
+        <span class="rt-label">Vieram 1x e sumiram</span>
+        <span class="rt-count">${riskFirst.length}</span>
+      </button>
+      <button class="risk-tab" data-tab="warning" onclick="switchRiskTab('warning')">
+        <span class="rt-dot warn"></span>
+        <span class="rt-label">Zona amarela</span>
+        <span class="rt-count">${riskWarning.length}</span>
+      </button>
+    </div>
+  `;
+
+  // Helper que renderiza uma tabela de grupo
+  function renderGroup(arr, groupKey, intro){
+    if(arr.length === 0){
+      return `<div class="risk-group" data-group="${groupKey}" style="display:none">
+        <div style="text-align:center;padding:30px;color:var(--green);font-size:13px">
+          ✓ Nenhum cliente nesta categoria.
+        </div>
+      </div>`;
+    }
+    const head = `<div class="risk-row head">
+      <div>Cliente</div><div>Última visita</div><div>Dias parado</div><div>Já gastou</div><div></div>
+    </div>`;
+    let lastBarber = null;
+    const rows = arr.map((r, idx) => {
+      const msg = encodeURIComponent(`Olá ${r.name.split(' ')[0]}, tudo bem? Aqui é da Barbearia Clube. Notamos sua falta por aqui! Que tal agendar um horário com ${r.barber}? Estamos com novidades.`);
+      const phone = String(r.phone).replace(/\D/g,'');
+      const waLink = phone ? `https://wa.me/55${phone}?text=${msg}` : '#';
+      const isExtra = idx >= 20;
+      const hiddenClass = isExtra ? ` risk-row-extra-${groupKey}` : '';
+      const hiddenStyle = isExtra ? ' style="display:none"' : '';
+      let separator = '';
+      if(r.barber !== lastBarber){
+        const countForBarber = arr.filter(x => x.barber === r.barber).length;
+        const sepHiddenStyle = isExtra ? ' style="display:none"' : '';
+        const sepHiddenClass = isExtra ? ` risk-row-extra-${groupKey}` : '';
+        separator = `<div class="risk-barber-sep${sepHiddenClass}"${sepHiddenStyle}>
+          <span class="rbs-name">${r.barber}</span>
+          <span class="rbs-count">${countForBarber} cliente${countForBarber > 1 ? 's' : ''}</span>
+        </div>`;
+        lastBarber = r.barber;
+      }
+      return separator + `<div class="risk-row${hiddenClass}"${hiddenStyle}>
+        <div class="risk-name">${r.name}<small>${r.visits} visita${r.visits>1?'s':''} · barbeiro ${r.barber}</small></div>
+        <div class="risk-val">${fmt.date(r.lastDate)}</div>
+        <div class="risk-val warn">${r.daysSince}d</div>
+        <div class="risk-val gold">R$ ${fmt.brl(r.spent)}</div>
+        <div><a href="${waLink}" target="_blank" class="risk-action">↗ WhatsApp</a></div>
+      </div>`;
+    }).join('');
+    const more = arr.length > 20 ? `
+      <div style="text-align:center;padding:20px 16px;border-top:1px solid var(--border)">
+        <button id="risk-more-${groupKey}" onclick="toggleRiskMoreGroup('${groupKey}')" style="background:transparent;border:1px solid var(--gold-soft);color:var(--gold);font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:12px 24px;cursor:pointer;border-radius:2px">
+          ↓ Mostrar todos (+ ${arr.length - 20} clientes)
+        </button>
+      </div>` : '';
+    const display = groupKey === 'critical' ? 'block' : 'none';
+    return `<div class="risk-group" data-group="${groupKey}" style="display:${display}">
+      ${intro}
+      ${head}
+      <div class="risk-table">${rows}</div>
+      ${more}
+    </div>`;
+  }
+
+  const introCritical = `<div class="risk-intro crit">
+    <strong>Em risco grave.</strong> Clientes recorrentes (2+ visitas) que sumiram há ${THRESHOLD_CRITICAL}+ dias. Esses já eram fiéis da casa — ação imediata recomendada.
+  </div>`;
+  const introFirst = `<div class="risk-intro first">
+    <strong>Vieram uma vez e sumiram.</strong> Clientes que tiveram só 1 atendimento (há ${THRESHOLD_CRITICAL}+ dias) e nunca voltaram. Pode ser que a experiência não converteu, ou esqueceram. Boa hora pra mandar um convite de retorno.
+  </div>`;
+  const introWarning = `<div class="risk-intro warn">
+    <strong>Zona amarela.</strong> Clientes recorrentes entre ${THRESHOLD_WARNING} e ${THRESHOLD_CRITICAL-1} dias parados. Ainda dentro do intervalo normal de 30 dias, MAS prestes a virar perda. Mensagem leve de lembrança ajuda a trazer de volta antes da janela fechar.
   </div>`;
 
-  let lastBarber = null;
-  let visibleCount = 0;
-  const rows = risk.map((r, idx) => {
-    const msg = encodeURIComponent(`Olá ${r.name.split(' ')[0]}, tudo bem? Aqui é da Barbearia Clube. Notamos sua falta por aqui! Que tal agendar um horário com ${r.barber}? Estamos com novidades.`);
-    const phone = String(r.phone).replace(/\D/g,'');
-    const waLink = phone ? `https://wa.me/55${phone}?text=${msg}` : '#';
-    const isExtra = idx >= 20;
-    const hiddenClass = isExtra ? ' risk-row-extra' : '';
-    const hiddenStyle = isExtra ? ' style="display:none"' : '';
+  const allGroups =
+    renderGroup(riskCritical, 'critical', introCritical) +
+    renderGroup(riskFirst, 'first', introFirst) +
+    renderGroup(riskWarning, 'warning', introWarning);
 
-    // Separador quando muda o barbeiro
-    let separator = '';
-    if(r.barber !== lastBarber){
-      // Conta quantos clientes em risco esse barbeiro tem
-      const countForBarber = risk.filter(x => x.barber === r.barber).length;
-      const sepHiddenStyle = isExtra ? ' style="display:none"' : '';
-      const sepHiddenClass = isExtra ? ' risk-row-extra' : '';
-      separator = `<div class="risk-barber-sep${sepHiddenClass}"${sepHiddenStyle}>
-        <span class="rbs-name">${r.barber}</span>
-        <span class="rbs-count">${countForBarber} cliente${countForBarber > 1 ? 's' : ''}</span>
-      </div>`;
-      lastBarber = r.barber;
-    }
-
-    return separator + `<div class="risk-row${hiddenClass}"${hiddenStyle}>
-      <div class="risk-name">${r.name}<small>${r.visits} visitas · barbeiro ${r.barber}</small></div>
-      <div class="risk-val">${fmt.date(r.lastDate)}</div>
-      <div class="risk-val warn">${r.daysSince}d</div>
-      <div class="risk-val gold">R$ ${fmt.brl(r.spent)}</div>
-      <div><a href="${waLink}" target="_blank" class="risk-action">↗ WhatsApp</a></div>
-    </div>`;
-  }).join('');
-
-  const more = risk.length > 20 ? `
-    <div id="risk-more-wrapper" style="text-align:center;padding:20px 16px;border-top:1px solid var(--border)">
-      <button id="risk-show-more" onclick="toggleRiskMore()" style="background:transparent;border:1px solid var(--gold-soft);color:var(--gold);font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:12px 24px;cursor:pointer;border-radius:2px;transition:all .2s">
-        ↓ Mostrar todos (+ ${risk.length - 20} clientes)
-      </button>
-    </div>` : '';
-
-  document.getElementById('risk-clients-list').innerHTML = summary + head + '<div class="risk-table">' + rows + '</div>' + more;
+  document.getElementById('risk-clients-list').innerHTML = summary + tabs + allGroups;
 }
 
-// Alterna entre mostrar/esconder os clientes em risco extras (além dos 20 primeiros)
-function toggleRiskMore(){
-  const extras = document.querySelectorAll('.risk-row-extra');
-  const btn = document.getElementById('risk-show-more');
+// Alterna entre as 3 abas (em risco grave / 1x e sumiu / zona amarela)
+function switchRiskTab(key){
+  document.querySelectorAll('.risk-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === key));
+  document.querySelectorAll('.risk-group').forEach(g => g.style.display = g.dataset.group === key ? 'block' : 'none');
+}
+
+// Mostrar mais / menos dentro de um grupo específico
+function toggleRiskMoreGroup(groupKey){
+  const extras = document.querySelectorAll('.risk-row-extra-' + groupKey);
+  const btn = document.getElementById('risk-more-' + groupKey);
   if(!extras.length || !btn) return;
   const showing = extras[0].style.display !== 'none';
-  // Conta só linhas (não separadores) pra mostrar o número no botão
-  const extraRows = document.querySelectorAll('.risk-row.risk-row-extra');
+  const extraRows = document.querySelectorAll('.risk-row.risk-row-extra-' + groupKey);
   extras.forEach(el => {
-    if(showing){
-      el.style.display = 'none';
-    } else {
-      // Separador é flex, linha de cliente é grid
-      el.style.display = el.classList.contains('risk-barber-sep') ? 'flex' : 'grid';
-    }
+    if(showing) el.style.display = 'none';
+    else el.style.display = el.classList.contains('risk-barber-sep') ? 'flex' : 'grid';
   });
   if(showing){
     btn.innerHTML = `↓ Mostrar todos (+ ${extraRows.length} clientes)`;
@@ -4344,6 +4772,7 @@ function _renderIndividualInner(){
   `).join('');
 
   // === Clientes em risco DESTE profissional ===
+  renderIndividualFrequency(name);
   renderIndividualRiskClients(name);
 
   // === Metas e plano de ação ===
@@ -4362,44 +4791,156 @@ function renderIndividualRiskClients(barberName){
   const countEl = document.getElementById('ind-risk-count');
   if(!card || !content) return;
 
-  const allRisk = window.RISK_CLIENTS || [];
-  const mine = allRisk.filter(r => r.barber === barberName);
+  const allCrit = (window.RISK_CLIENTS || []).filter(r => r.barber === barberName);
+  const allFirst = (window.RISK_FIRST || []).filter(r => r.barber === barberName);
+  const allWarn = (window.RISK_WARNING || []).filter(r => r.barber === barberName);
+  const total = allCrit.length + allFirst.length + allWarn.length;
 
-  if(mine.length === 0){
+  if(total === 0){
     countEl.textContent = '';
     content.innerHTML = `<div style="text-align:center;padding:30px 20px;color:var(--green);font-size:13px;line-height:1.6">
-      ✓ Nenhum cliente recorrente seu sumiu nos últimos 45+ dias. Continue assim.
+      ✓ Nenhum cliente seu sumiu. Continue assim.
     </div>`;
     return;
   }
 
-  const totalLost = mine.reduce((s,r) => s + r.spent, 0);
-  countEl.textContent = `${mine.length} cliente${mine.length>1?'s':''} · R$ ${fmt.brl(totalLost)} em histórico`;
+  const totalSpent = [...allCrit, ...allFirst, ...allWarn].reduce((s,r) => s + r.spent, 0);
+  countEl.textContent = `${total} cliente${total>1?'s':''} · R$ ${fmt.brl(totalSpent)} em histórico`;
 
-  // Aviso curto
-  const intro = `<div style="padding:14px 20px;background:rgba(232,93,76,.06);border-left:2px solid var(--red);font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:16px">
-    Esses são clientes que <strong style="color:var(--text)">você atendeu pelo menos 2 vezes</strong> e que estão há mais de 45 dias sem voltar. Use os botões de WhatsApp pra chamar de volta — costuma trazer retorno alto.
+  // Botão de download — exporta TODOS os 3 grupos do barbeiro num CSV
+  const downloadBtn = `<div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <button onclick="downloadIndividualRiskList('${barberName.replace(/'/g,"\\'")}')"
+            style="background:var(--gold);color:#1a1612;border:none;padding:10px 20px;
+                   font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+                   font-weight:600;cursor:pointer;border-radius:2px;transition:opacity .2s">
+      ↓ Baixar lista completa (${total} clientes)
+    </button>
   </div>`;
 
-  // Tabela simples
-  const head = `<div class="risk-row head">
-    <div>Cliente</div><div>Última visita</div><div>Dias parado</div><div>Já gastou</div><div></div>
-  </div>`;
-
-  const rows = mine.map(r => {
-    const msg = encodeURIComponent(`Olá ${r.name.split(' ')[0]}, tudo bem? Aqui é da Barbearia Clube. Notamos sua falta por aqui! Que tal agendar um horário com ${r.barber}? Estamos com novidades.`);
-    const phone = String(r.phone).replace(/\D/g,'');
-    const waLink = phone ? `https://wa.me/55${phone}?text=${msg}` : '#';
-    return `<div class="risk-row">
-      <div class="risk-name">${r.name}<small>${r.visits} visitas</small></div>
-      <div class="risk-val">${fmt.date(r.lastDate)}</div>
-      <div class="risk-val warn">${r.daysSince}d</div>
-      <div class="risk-val gold">R$ ${fmt.brl(r.spent)}</div>
-      <div><a href="${waLink}" target="_blank" class="risk-action">↗ WhatsApp</a></div>
+  // Renderiza uma seção pra cada grupo (se tiver)
+  function buildTable(arr){
+    const head = `<div class="risk-row head">
+      <div>Cliente</div><div>Última visita</div><div>Dias parado</div><div>Já gastou</div><div></div>
     </div>`;
-  }).join('');
+    const rows = arr.map(r => {
+      const msg = encodeURIComponent(`Olá ${r.name.split(' ')[0]}, tudo bem? Aqui é da Barbearia Clube. Notamos sua falta por aqui! Que tal agendar um horário com ${r.barber}? Estamos com novidades.`);
+      const phone = String(r.phone).replace(/\D/g,'');
+      const waLink = phone ? `https://wa.me/55${phone}?text=${msg}` : '#';
+      return `<div class="risk-row">
+        <div class="risk-name">${r.name}<small>${r.visits} visita${r.visits>1?'s':''}</small></div>
+        <div class="risk-val">${fmt.date(r.lastDate)}</div>
+        <div class="risk-val warn">${r.daysSince}d</div>
+        <div class="risk-val gold">R$ ${fmt.brl(r.spent)}</div>
+        <div><a href="${waLink}" target="_blank" class="risk-action">↗ WhatsApp</a></div>
+      </div>`;
+    }).join('');
+    return head + '<div class="risk-table">' + rows + '</div>';
+  }
 
-  content.innerHTML = intro + head + '<div class="risk-table">' + rows + '</div>';
+  let html = downloadBtn;
+  if(allCrit.length > 0){
+    const sub = `R$ ${fmt.brl(allCrit.reduce((s,r)=>s+r.spent,0))} em histórico`;
+    html += `<div class="risk-intro crit">
+      <strong>Em risco grave · ${allCrit.length} cliente${allCrit.length>1?'s':''} (${sub})</strong>
+      Clientes seus que vieram 2+ vezes e sumiram há 45+ dias. Prioridade máxima.
+    </div>${buildTable(allCrit)}`;
+  }
+  if(allFirst.length > 0){
+    const sub = `R$ ${fmt.brl(allFirst.reduce((s,r)=>s+r.spent,0))} em histórico`;
+    html += `<div class="risk-intro first" style="margin-top:24px">
+      <strong>Vieram uma vez e sumiram · ${allFirst.length} cliente${allFirst.length>1?'s':''} (${sub})</strong>
+      Pessoas que você atendeu uma vez e nunca voltaram. Convite de retorno pode reativar.
+    </div>${buildTable(allFirst)}`;
+  }
+  if(allWarn.length > 0){
+    const sub = `R$ ${fmt.brl(allWarn.reduce((s,r)=>s+r.spent,0))} em histórico`;
+    html += `<div class="risk-intro warn" style="margin-top:24px">
+      <strong>Zona amarela · ${allWarn.length} cliente${allWarn.length>1?'s':''} (${sub})</strong>
+      Seus clientes recorrentes entre 35-44 dias parados. Mensagem leve traz de volta antes de virar perda.
+    </div>${buildTable(allWarn)}`;
+  }
+
+  content.innerHTML = html;
+}
+
+// Exporta os clientes em risco de um barbeiro como CSV (abre em Excel/Sheets/qualquer app)
+// Combina os 3 grupos: em risco grave + vieram 1x e sumiram + zona amarela
+function downloadIndividualRiskList(barberName){
+  const crit = (window.RISK_CLIENTS || []).filter(r => r.barber === barberName);
+  const first = (window.RISK_FIRST || []).filter(r => r.barber === barberName);
+  const warn = (window.RISK_WARNING || []).filter(r => r.barber === barberName);
+
+  if(crit.length + first.length + warn.length === 0){
+    alert('Nenhum cliente em risco pra esse profissional.');
+    return;
+  }
+
+  // Helper: formata telefone como (41) 99999-9999
+  function formatPhone(raw){
+    const digits = String(raw || '').replace(/\D/g,'');
+    if(digits.length === 11) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+    if(digits.length === 10) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`;
+    return digits || '—';
+  }
+
+  // Helper: escapa campos pro CSV (vírgula, aspas, quebra de linha)
+  function csvEscape(v){
+    const s = String(v == null ? '' : v);
+    if(s.includes(',') || s.includes('"') || s.includes('\n') || s.includes(';')){
+      return '"' + s.replace(/"/g,'""') + '"';
+    }
+    return s;
+  }
+
+  // Cabeçalho do CSV (uso ; como separador — padrão BR, Excel BR abre certinho)
+  const lines = ['Categoria;Cliente;Telefone;Visitas;Última visita;Dias sem voltar;Já gastou (R$)'];
+
+  function addRows(arr, categoria){
+    arr.forEach(r => {
+      const phone = formatPhone(r.phone);
+      const dataStr = r.lastDate instanceof Date
+        ? String(r.lastDate.getDate()).padStart(2,'0') + '/' +
+          String(r.lastDate.getMonth()+1).padStart(2,'0') + '/' + r.lastDate.getFullYear()
+        : '';
+      const spent = (r.spent || 0).toFixed(2).replace('.',',');
+      lines.push([
+        csvEscape(categoria),
+        csvEscape(r.name),
+        csvEscape(phone),
+        r.visits,
+        csvEscape(dataStr),
+        r.daysSince,
+        csvEscape(spent)
+      ].join(';'));
+    });
+  }
+
+  addRows(crit, 'Em risco grave');
+  addRows(first, 'Veio 1x e sumiu');
+  addRows(warn, 'Zona amarela');
+
+  // BOM UTF-8 garante que acentos abrem certo no Excel do Windows
+  const BOM = '\uFEFF';
+  const csv = BOM + lines.join('\r\n');
+
+  // Nome do arquivo: clientes-em-risco-Wagner-2026-06-03.csv
+  const today = new Date();
+  const dateStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  const safeName = barberName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-');
+  const filename = `clientes-em-risco-${safeName}-${dateStr}.csv`;
+
+  // Dispara o download
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function renderIndividualChart(myAttend){
@@ -4460,16 +5001,28 @@ function renderIndividualGoals(name, m){
     return;
   }
 
+  // === Helpers de período ===
+  // Quando o relatório cobre múltiplos meses (ex: 90 dias = 3 meses), os totais do período
+  // precisam ser divididos pelo número de meses pra exibir valores MENSAIS (que é o que o
+  // dono usa pra planejar o próximo mês).
+  const monthsInReport = (typeof MONTHS_COVERED === 'number' && MONTHS_COVERED > 0) ? MONTHS_COVERED : 1;
+  const perMonth = v => v / monthsInReport;
+
   // META PRINCIPAL: Bater o faturamento mínimo (a mais importante)
   if(!m.hitTarget && m.gapRev < 0){
     const faltaR = -m.gapRev;
-    const atendPorDiaUtil = m.uniqueDays > 0 ? (m.extraAtend / m.uniqueDays).toFixed(1) : 0;
+    // extraAtend é o total do período. Pra dizer "no mês", divide pelos meses do arquivo.
+    const extraAtendMes = Math.ceil(perMonth(m.extraAtend));
+    // dias úteis no MÊS: uniqueDays do período / meses
+    const diasUteisMes = m.uniqueDays > 0 ? (m.uniqueDays / monthsInReport) : 0;
+    const atendPorDiaUtil = diasUteisMes > 0 ? (extraAtendMes / diasUteisMes).toFixed(1) : 0;
     const ticketAlvo = m.ticket > 0 ? m.ticket : (m.avgTicket || 130);
+    const faltaMes = perMonth(faltaR);
     goals.push({
       priority: 'critica',
       title: 'Bater a meta mínima de faturamento',
-      desc: `Falta <strong>R$ ${fmt.brl(faltaR)}</strong> pra cobrir o custo da cadeira. Com seu ticket atual de R$ ${fmt.brl2(ticketAlvo)}, isso são <strong>~${m.extraAtend} atendimentos extras</strong> no mês — cerca de <strong>${atendPorDiaUtil} atendimento(s) a mais por dia útil</strong>.<br><br>Caminhos concretos: 1) Listar últimos 50 clientes que não voltam há 30+ dias e enviar mensagem pessoal; 2) Pedir 1 indicação para cada cliente atendido (oferecer 10% de desconto na próxima vez do indicado); 3) Liberar horários de almoço uma vez por semana.`,
-      target: `Meta: R$ ${fmt.brl(m.targetRev)} de faturamento · +${m.extraAtend} atendimentos`
+      desc: `Falta <strong>R$ ${fmt.brl(faltaMes)}</strong> por mês pra cobrir o custo da cadeira. Com seu ticket atual de R$ ${fmt.brl2(ticketAlvo)}, isso são <strong>~${extraAtendMes} atendimentos extras</strong> no mês — cerca de <strong>${atendPorDiaUtil} atendimento(s) a mais por dia útil</strong>.<br><br>Caminhos concretos: 1) Listar últimos 50 clientes que não voltam há 30+ dias e enviar mensagem pessoal; 2) Pedir 1 indicação para cada cliente atendido (oferecer 10% de desconto na próxima vez do indicado); 3) Liberar horários de almoço uma vez por semana.`,
+      target: `Meta: R$ ${fmt.brl(perMonth(m.targetRev))} de faturamento mensal · +${extraAtendMes} atendimentos/mês`
     });
   }
 
@@ -4494,7 +5047,9 @@ function renderIndividualGoals(name, m){
   // TICKET - foco em combos e adicionais
   if(m.avgTicket > 0 && m.ticket < m.avgTicket * 0.95){
     const gap = m.avgTicket - m.ticket;
-    const ganhoMes = gap * m.totalAtend;
+    // m.totalAtend é o total de atendimentos do PERÍODO inteiro.
+    // Pra calcular o ganho MENSAL, divide pelos meses do arquivo.
+    const ganhoMes = gap * perMonth(m.totalAtend);
     goals.push({
       priority: 'alta',
       title: 'Subir o ticket médio com combos',
@@ -4528,38 +5083,42 @@ function renderIndividualGoals(name, m){
       desc: `Você vendeu <strong>0 extras</strong> no período. Extras pagam <strong>50% direto pra você</strong>, não tem rateio com a casa. Se o Programa Salão não tem extras cadastrados pra você, peça pro dono ativar (sobrancelha, pezinho, hidratação, depilação nasal). Depois, treine a oferta: ao final de cada corte, fazer 1 pergunta específica do tipo "quer dar uma melhorada na sobrancelha hoje?".`,
       target: `Meta: 10 extras no próximo mês`
     });
-  } else if(m.extrasCount < 10 && m.avgExtras > m.extrasCount){
+  } else if(m.extrasCount < 10 * monthsInReport && m.avgExtras > m.extrasCount){
+    const extrasMes = Math.round(perMonth(m.extrasCount));
+    const avgExtrasMes = Math.round(perMonth(m.avgExtras));
     goals.push({
       priority: 'media',
       title: 'Aumentar vendas de extras',
-      desc: `Você vendeu <strong>${m.extrasCount} extras</strong>, e a média do seu grupo é <strong>${Math.round(m.avgExtras)}</strong>. Cada extra é 50% direto pra você. O segredo é tornar a oferta automática - sempre no momento do "passou o produto, antes do espelho". Treine 2 falas pra 2 extras diferentes e use uma delas em todo atendimento.`,
-      target: `Meta: chegar a ${Math.round(m.avgExtras)} extras (média do grupo)`
+      desc: `Você vendeu <strong>${extrasMes} extras por mês</strong> (média), e a média do seu grupo é <strong>${avgExtrasMes} por mês</strong>. Cada extra é 50% direto pra você. O segredo é tornar a oferta automática - sempre no momento do "passou o produto, antes do espelho". Treine 2 falas pra 2 extras diferentes e use uma delas em todo atendimento.`,
+      target: `Meta: chegar a ${avgExtrasMes} extras/mês (média do grupo)`
     });
   }
 
-  // PRODUTOS - meta 10 e 20
-  if(m.productsCount === 0){
+  // PRODUTOS - meta 10 e 20 (sempre POR MÊS, é a regra do Programa Salão)
+  // m.productsCount é total do período. Pra exibir mensalmente, divide pelos meses.
+  const productsPerMonth = Math.round(perMonth(m.productsCount));
+  if(productsPerMonth === 0){
     goals.push({
       priority: 'media',
       title: 'Começar a vender produtos da vitrine',
-      desc: `Você vendeu <strong>0 produtos</strong>. A partir de 10 produtos no mês, você ganha <strong>10% de bônus</strong> sobre o valor vendido. A partir de 20, vira <strong>20%</strong>. O Wagner vende 26+ por mês usando uma técnica simples: passa o produto durante o corte (mostra o efeito no próprio cabelo do cliente) e fala "esse aqui você leva pra fazer em casa".`,
+      desc: `Você vendeu <strong>0 produtos</strong>. A partir de 10 produtos no mês, você ganha <strong>10% de bônus</strong> sobre o valor vendido. A partir de 20, vira <strong>20%</strong>. Técnica simples que funciona: passa o produto durante o corte (mostra o efeito no próprio cabelo do cliente) e fala "esse aqui você leva pra fazer em casa".`,
       target: `Meta: 10 produtos no próximo mês · Ativar bônus de 10%`
     });
-  } else if(m.productsCount < 10){
-    const faltam = 10 - m.productsCount;
+  } else if(productsPerMonth < 10){
+    const faltam = 10 - productsPerMonth;
     goals.push({
       priority: 'media',
       title: 'Bater meta de produtos pra ativar bônus',
-      desc: `Você vendeu <strong>${m.productsCount} produto(s)</strong>. Faltam <strong>${faltam}</strong> pra bater a meta de 10 e ativar o bônus de 10%. Estratégia: oferecer produto de uso DIÁRIO (pomada, óleo de barba) ao invés de produtos esporádicos - o cliente leva sempre que termina. Mostre a textura no cabelo dele durante o corte ao invés de só apontar a prateleira.`,
-      target: `Meta: bater 10 · faltam ${faltam}`
+      desc: `Você vendeu <strong>${productsPerMonth} produto(s) por mês</strong> (média). Faltam <strong>${faltam}</strong> pra bater a meta mensal de 10 e ativar o bônus de 10%. Estratégia: oferecer produto de uso DIÁRIO (pomada, óleo de barba) ao invés de produtos esporádicos - o cliente leva sempre que termina. Mostre a textura no cabelo dele durante o corte ao invés de só apontar a prateleira.`,
+      target: `Meta: bater 10/mês · faltam ${faltam}`
     });
-  } else if(m.productsCount >= 10 && m.productsCount < 20){
-    const faltam = 20 - m.productsCount;
+  } else if(productsPerMonth >= 10 && productsPerMonth < 20){
+    const faltam = 20 - productsPerMonth;
     goals.push({
       priority: 'baixa',
       title: 'Dobrar bônus de produtos',
-      desc: `Você já ativou o bônus de 10% com <strong>${m.productsCount} produtos</strong>. Faltam só <strong>${faltam}</strong> pra dobrar pra 20%. Diferença prática: passou de venda "quando o cliente comenta do produto" pra venda ativa em TODO atendimento. Não precisa ser agressivo - basta perguntar "o que você está usando em casa?" e ouvir a resposta.`,
-      target: `Meta: bater 20 · faltam ${faltam}`
+      desc: `Você já ativou o bônus de 10% com <strong>${productsPerMonth} produtos/mês</strong>. Faltam só <strong>${faltam}</strong> pra dobrar pra 20%. Diferença prática: passou de venda "quando o cliente comenta do produto" pra venda ativa em TODO atendimento. Não precisa ser agressivo - basta perguntar "o que você está usando em casa?" e ouvir a resposta.`,
+      target: `Meta: bater 20/mês · faltam ${faltam}`
     });
   }
 
