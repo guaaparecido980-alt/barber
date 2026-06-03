@@ -1005,7 +1005,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v8.7</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v8.8</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1548,6 +1548,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       <div class="field">
         <label>Custo fixo total da casa (R$/mês)</label>
         <input type="number" id="total-fixed-cost" value="125133" min="0" step="100">
+        <small style="display:block;margin-top:4px;font-size:11px;color:var(--text-mute);line-height:1.4">Informe sempre o <strong>valor de 1 mês</strong>. O sistema multiplica automaticamente conforme o período do arquivo: 30 dias × 1, 60 dias × 2, 90 dias × 3, etc.</small>
       </div>
       <div class="field">
         <label>Janela de retorno (dias)</label>
@@ -1663,6 +1664,13 @@ let RAW_PREV = [];
 let GROUPED = [];
 let GROUPED_PREV = [];
 let CHARTS = {};
+
+// === Cálculo proporcional do custo fixo (preenchido em renderAll) ===
+// Permite que o sistema entenda automaticamente se você subiu 30, 60 ou 90 dias
+// e aplique o custo fixo proporcional ao período.
+let EFFECTIVE_FIXED_COST = 0;  // custo fixo já multiplicado pelos meses do período
+let PERIOD_DAYS = 30;          // dias do período (calculado da diferença entre data mínima e máxima)
+let MONTHS_COVERED = 1;        // PERIOD_DAYS / 30
 
 // Buffers temporários antes de processar
 let PENDING_SERVICES = null;
@@ -3052,6 +3060,20 @@ function renderAll(minDate, maxDate){
   document.getElementById('period-label').textContent = periodStr;
   document.getElementById('gen-time').textContent = new Date().toLocaleString('pt-BR');
 
+  // === Calcula período em dias e meses (para escalar custo fixo proporcionalmente) ===
+  // +1 porque o período inclui o primeiro e o último dia.
+  // Ex: 01/04 a 30/04 = 30 dias (não 29).
+  const periodDaysCount = Math.round((maxDate - minDate) / (1000*60*60*24)) + 1;
+  // Meses cobertos: divide por 30 (média comercial). 30 dias = 1.0, 90 dias = 3.0, 60 dias = 2.0
+  const monthsCovered = periodDaysCount / 30;
+  // Custo fixo efetivo: o valor mensal × quantos meses o arquivo cobre.
+  // Se o usuário sobe 1 mês, custo efetivo = custo mensal (R$ 125.133).
+  // Se sobe 3 meses, custo efetivo = R$ 125.133 × 3 = R$ 375.399.
+  EFFECTIVE_FIXED_COST = CFG.totalFixedCost * monthsCovered;
+  PERIOD_DAYS = periodDaysCount;
+  MONTHS_COVERED = monthsCovered;
+  console.log(`📅 Período: ${periodDaysCount} dias = ${monthsCovered.toFixed(2)} meses. Custo fixo efetivo: R$ ${EFFECTIVE_FIXED_COST.toFixed(2)} (mensal: R$ ${CFG.totalFixedCost})`);
+
   // Totais gerais (continuam vindo das linhas pra preservar receita real)
   const totalRevenue = RAW.reduce((s,r) => s + r.total, 0);
   const totalSalao = RAW.reduce((s,r) => s + r.parteSalao, 0);
@@ -3117,7 +3139,7 @@ function renderAll(minDate, maxDate){
     b.spaceWeight = spaceInfo.weight;
     b.spaceLabel = spaceInfo.label;
     b.chairCostProrated = totalWeightedDays > 0
-      ? CFG.totalFixedCost * (b.spaceWeight * b.billingDays / totalWeightedDays)
+      ? EFFECTIVE_FIXED_COST * (b.spaceWeight * b.billingDays / totalWeightedDays)
       : 0;
 
     // RECEITA LÍQUIDA DE PRODUTOS pra casa (receita bruta - bônus do barbeiro)
@@ -3223,7 +3245,7 @@ function renderAll(minDate, maxDate){
       + (RAW_PRODUCTS||[]).filter(r => isCaixaUser(r.usuario) && !String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0)
       + (RAW_PRODUCTS||[]).filter(r => String(r.estoque||'').toLowerCase().includes('bebida')).reduce((s,r) => s + r.total, 0);
     const _execReceitaLiquida = totalSalao + _execProductNet - fidelidadeValor - (CFG.manualCortesias || 0);
-    const _execFinalResult = _execReceitaLiquida - CFG.totalFixedCost;
+    const _execFinalResult = _execReceitaLiquida - EFFECTIVE_FIXED_COST;
     const resultEl = document.getElementById('exec-result');
     resultEl.textContent = (_execFinalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(_execFinalResult));
     resultEl.className = 'exec-value ' + (_execFinalResult >= 0 ? 'pos' : 'neg');
@@ -3429,7 +3451,7 @@ function renderAll(minDate, maxDate){
 
   // Receita líquida que entra na casa REAL
   const receitaLiquidaCasa = totalSalao + totalProductNet - fidelidadeValor - cortesiasValor;
-  const finalResult = receitaLiquidaCasa - CFG.totalFixedCost;
+  const finalResult = receitaLiquidaCasa - EFFECTIVE_FIXED_COST;
 
   document.getElementById('ins-final-bruto').textContent = 'R$ ' + fmt.brl(usedRevenue);
   document.getElementById('ins-final-bruto-desc').innerHTML = caixaTotalCalc > 0
@@ -3447,13 +3469,17 @@ function renderAll(minDate, maxDate){
   finalEl.textContent = (finalResult >= 0 ? '+R$ ' : '−R$ ') + fmt.brl(Math.abs(finalResult));
   finalEl.style.color = finalResult >= 0 ? '#5a8a3a' : '#b8362a';
   const ratio = usedRevenue > 0 ? (finalResult / usedRevenue * 100) : 0;
-  document.getElementById('ins-final-result-desc').innerHTML = `Receita líquida R$ ${fmt.brl(receitaLiquidaCasa)} − Custo fixo R$ ${fmt.brl(CFG.totalFixedCost)}<br>${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre faturamento bruto`;
+  // Mostra o custo efetivo (R$ mensal × meses do período) e explica a multiplicação se >1 mês
+  const periodCostNote = MONTHS_COVERED > 1.05
+    ? `<span style="display:block;margin-top:4px;color:var(--gold);font-size:11px">Custo fixo R$ ${fmt.brl(CFG.totalFixedCost)}/mês × ${MONTHS_COVERED.toFixed(1).replace('.',',')} meses (${PERIOD_DAYS} dias do arquivo) = R$ ${fmt.brl(EFFECTIVE_FIXED_COST)}</span>`
+    : '';
+  document.getElementById('ins-final-result-desc').innerHTML = `Receita líquida R$ ${fmt.brl(receitaLiquidaCasa)} − Custo fixo R$ ${fmt.brl(EFFECTIVE_FIXED_COST)}<br>${ratio >= 0 ? '+' : ''}${ratio.toFixed(1).replace('.',',')}% sobre faturamento bruto${periodCostNote}`;
 
   document.getElementById('ins-total-house').textContent = 'R$ ' + fmt.brl(receitaLiquidaCasa);
 
   // === Saúde Financeira (regra dos 50%) ===
   renderCaixaSection();
-  renderHealthCheck(displayRevenue, CFG.totalFixedCost);
+  renderHealthCheck(displayRevenue, EFFECTIVE_FIXED_COST);
 
   // === Tabela de barbeiros ===
   const rows = document.getElementById('barber-rows');
@@ -4266,7 +4292,7 @@ function _renderIndividualInner(){
   });
 
   const myChairCost = totalW > 0
-    ? CFG.totalFixedCost * (myWeight * myBillingDays / totalW)
+    ? EFFECTIVE_FIXED_COST * (myWeight * myBillingDays / totalW)
     : 0;
 
   // Calcula meta de faturamento (com a comissão real do profissional)
