@@ -555,6 +555,61 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     .risk-tab{min-width:0}
   }
 
+  /* ============ ESTENDER ANÁLISE (período de 6 meses) ============ */
+  .extend-uploads{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px
+  }
+  .extend-card{
+    background:rgba(0,0,0,.25);
+    border:1px dashed var(--border-strong);
+    padding:18px 16px;border-radius:2px;
+    transition:all .2s
+  }
+  .extend-card.loaded{
+    border-style:solid;border-color:var(--gold-soft);
+    background:rgba(201,169,97,.04)
+  }
+  .extend-badge{
+    font-family:var(--mono);font-size:10px;color:var(--gold);
+    letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px
+  }
+  .extend-badge em{font-style:normal;color:var(--text-mute);font-size:9px;margin-left:4px}
+  .extend-title{
+    font-family:var(--display);font-size:15px;color:var(--text);
+    margin-bottom:4px
+  }
+  .extend-sub{
+    font-family:var(--mono);font-size:10px;color:var(--text-mute);
+    margin-bottom:14px
+  }
+  .extend-btn{
+    background:transparent;border:1px solid var(--gold-soft);
+    color:var(--gold);font-family:var(--mono);font-size:10px;
+    letter-spacing:.15em;text-transform:uppercase;
+    padding:10px 14px;cursor:pointer;border-radius:2px;
+    width:100%;transition:all .2s
+  }
+  .extend-btn:hover{background:rgba(201,169,97,.08)}
+  .extend-card.loaded .extend-btn{display:none}
+  .extend-status{
+    font-family:var(--mono);font-size:11px;color:var(--green);
+    margin-top:10px;display:none
+  }
+  .extend-card.loaded .extend-status{display:block}
+  /* Badge no topo do dashboard quando análise estendida */
+  .extend-badge-active{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(201,169,97,.1);
+    border:1px solid var(--gold-soft);
+    padding:4px 12px;border-radius:2px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--gold);
+    margin-left:12px
+  }
+  @media (max-width:980px){
+    .extend-uploads{grid-template-columns:1fr}
+  }
+
   /* ============ PERFIL DE FREQUÊNCIA ============ */
   .freq-bar{
     display:flex;height:36px;width:100%;
@@ -1163,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v9.2</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v9.3</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1691,23 +1746,62 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     </div>
   </section>
 
-  <!-- COMPARATIVO -->
+  <!-- ESTENDER ANÁLISE PRA 6 MESES -->
   <section class="section">
     <div class="section-head">
-      <h2>Comparativo <em>período anterior</em></h2>
-      <span class="meta" id="compare-meta">Faça upload do mês anterior para comparar</span>
+      <h2>Estender análise <em>até 6 meses</em></h2>
+      <span class="meta" id="extend-meta">O Programa Salão exporta no máximo 3 meses · adicione o trimestre anterior pra dobrar o histórico</span>
     </div>
-    <div class="card" id="compare-box">
-      <div id="compare-content">
-        <div style="text-align:center;padding:40px 20px">
-          <div style="font-family:var(--display);font-size:48px;color:var(--gold);font-style:italic;margin-bottom:16px">↑</div>
-          <div style="font-family:var(--display);font-size:20px;margin-bottom:8px">Comparar com período anterior</div>
-          <div style="color:var(--text-dim);font-size:13px;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto">Exporte o relatório do mês anterior no Programa Salão e suba aqui. O sistema calcula variações automaticamente.</div>
-          <button class="btn-primary" onclick="document.getElementById('filePrev').click()">Selecionar arquivo do período anterior</button>
+    <div class="card" id="extend-box">
+      <div id="extend-content">
+        <div style="padding:32px 24px">
+          <div style="font-family:var(--display);font-size:20px;margin-bottom:8px;color:var(--text)">Análise estendida com mais 3 meses</div>
+          <div style="color:var(--text-dim);font-size:13px;margin-bottom:24px;line-height:1.6;max-width:680px">
+            Como o Programa Salão limita a exportação em 3 meses, suba aqui o relatório do <strong style="color:var(--text)">trimestre anterior</strong> (mesmos 3 arquivos: serviços, produtos e caixa). O sistema vai juntar com o que já está carregado e recalcular <strong style="color:var(--text)">tudo</strong> em base de até 6 meses — clientes em risco ficam dramaticamente mais precisos e a frequência de retorno reflete o padrão real.
+          </div>
+
+          <div class="extend-uploads">
+            <div class="extend-card" id="dzServicesPrev">
+              <div class="extend-badge">↑ Arquivo 1</div>
+              <div class="extend-title">Serviços do trimestre anterior</div>
+              <div class="extend-sub">Relatórios → Produção em serviços → Excel</div>
+              <button class="extend-btn" onclick="triggerExtendUpload('Services')">Selecionar arquivo</button>
+              <div class="extend-status" id="extend-status-services"></div>
+            </div>
+            <div class="extend-card" id="dzProductsPrev">
+              <div class="extend-badge">↑ Arquivo 2 · <em>opcional</em></div>
+              <div class="extend-title">Produtos do trimestre anterior</div>
+              <div class="extend-sub">Relatórios → Produção em produtos → Excel</div>
+              <button class="extend-btn" onclick="triggerExtendUpload('Products')">Selecionar arquivo</button>
+              <div class="extend-status" id="extend-status-products"></div>
+            </div>
+            <div class="extend-card" id="dzCaixaPrev">
+              <div class="extend-badge">↑ Arquivo 3 · <em>opcional</em></div>
+              <div class="extend-title">Caixa Geral do trimestre anterior</div>
+              <div class="extend-sub">Relatórios → Faturamento do caixa geral → Excel</div>
+              <button class="extend-btn" onclick="triggerExtendUpload('Caixa')">Selecionar arquivo</button>
+              <div class="extend-status" id="extend-status-caixa"></div>
+            </div>
+          </div>
+
+          <div style="text-align:center;margin-top:24px">
+            <button id="btnExtend" class="btn-primary" onclick="applyExtendedAnalysis()" disabled
+                    style="opacity:0.4;cursor:not-allowed;font-size:14px;padding:14px 32px;letter-spacing:.15em">
+              ↻ Atualizar relatório com período estendido
+            </button>
+            <div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.1em;text-transform:uppercase" id="extend-helper">
+              Selecione ao menos o arquivo de serviços anterior
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- inputs hidden pros uploads de extensão -->
+  <input type="file" id="inputServicesPrev" accept=".xlsx,.xls" style="display:none">
+  <input type="file" id="inputProductsPrev" accept=".xlsx,.xls" style="display:none">
+  <input type="file" id="inputCaixaPrev" accept=".xlsx,.xls" style="display:none">
 
   <footer class="footer">
     <div>Gustavo Digital · Sistema de Gestão para Barbearias</div>
@@ -1849,6 +1943,13 @@ let EFFECTIVE_FIXED_COST = 0;  // custo fixo já multiplicado pelos meses do per
 let PERIOD_DAYS = 30;          // dias do período (calculado da diferença entre data mínima e máxima)
 let MONTHS_COVERED = 1;        // PERIOD_DAYS / 30
 
+// === Estender análise pra 6 meses ===
+// Armazena dados do trimestre anterior (selecionados separadamente).
+// Quando o usuário clica "Atualizar com período estendido", esses são concatenados
+// com RAW/RAW_PRODUCTS/RAW_CAIXA e o relatório inteiro é recalculado.
+let PENDING_EXTEND_FILES = { services: null, products: null, caixa: null };
+let EXTENDED_ACTIVE = false;  // true quando o relatório atual já está com período estendido aplicado
+
 // Buffers temporários antes de processar
 let PENDING_SERVICES = null;
 let PENDING_PRODUCTS = null;
@@ -1948,6 +2049,206 @@ function generateReport(){
   });
 }
 
+/* ============================================
+   ESTENDER ANÁLISE PRA 6 MESES
+   Permite subir um segundo conjunto de arquivos (do trimestre anterior)
+   que são concatenados com os atuais e re-processam tudo.
+   ============================================ */
+
+// Botão "Selecionar arquivo" em cada card da seção de extend
+function triggerExtendUpload(kind){
+  const id = 'input' + kind + 'Prev';
+  const inp = document.getElementById(id);
+  if(inp){ inp.value = ''; inp.click(); }
+}
+
+// Configura os listeners dos 3 inputs de período anterior
+function setupExtendInputs(){
+  const mapping = [
+    {input:'inputServicesPrev', card:'dzServicesPrev', status:'extend-status-services', key:'services', label:'Serviços'},
+    {input:'inputProductsPrev', card:'dzProductsPrev', status:'extend-status-products', key:'products', label:'Produtos'},
+    {input:'inputCaixaPrev',    card:'dzCaixaPrev',    status:'extend-status-caixa',    key:'caixa',    label:'Caixa Geral'}
+  ];
+  mapping.forEach(m => {
+    const inp = document.getElementById(m.input);
+    if(!inp) return;
+    inp.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      PENDING_EXTEND_FILES[m.key] = file;
+      const card = document.getElementById(m.card);
+      const status = document.getElementById(m.status);
+      if(card) card.classList.add('loaded');
+      if(status) status.textContent = '✓ ' + file.name;
+      updateExtendButton();
+    });
+  });
+}
+
+// Habilita o botão "Atualizar" quando ao menos o arquivo de serviços anterior foi escolhido
+function updateExtendButton(){
+  const btn = document.getElementById('btnExtend');
+  const helper = document.getElementById('extend-helper');
+  if(!btn) return;
+  const ready = !!PENDING_EXTEND_FILES.services;
+  btn.disabled = !ready;
+  btn.style.opacity = ready ? '1' : '0.4';
+  btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+  if(helper){
+    if(!ready){
+      helper.textContent = 'Selecione ao menos o arquivo de serviços anterior';
+    } else {
+      const extras = [];
+      if(PENDING_EXTEND_FILES.products) extras.push('produtos');
+      if(PENDING_EXTEND_FILES.caixa) extras.push('caixa');
+      helper.textContent = extras.length
+        ? 'Pronto · serviços + ' + extras.join(' + ')
+        : 'Pronto · apenas serviços (produtos e caixa do trimestre anterior ficarão sem dados)';
+    }
+  }
+}
+
+// Aplica a análise estendida: lê os arquivos anteriores, concatena com os atuais e re-renderiza tudo
+function applyExtendedAnalysis(){
+  if(!PENDING_EXTEND_FILES.services){
+    alert('Suba ao menos o arquivo de serviços do trimestre anterior.');
+    return;
+  }
+  if(typeof XLSX === 'undefined'){
+    alert('Aguarde a biblioteca terminar de carregar.');
+    return;
+  }
+  if(RAW.length === 0){
+    alert('Primeiro gere o relatório do período atual (suba o arquivo de serviços principal).');
+    return;
+  }
+
+  const btn = document.getElementById('btnExtend');
+  if(btn){ btn.disabled = true; btn.textContent = 'Processando...'; btn.style.opacity = '0.6'; }
+
+  // Guarda os dados atuais (período recente) pra restaurar caso dê erro
+  const RAW_BACKUP = RAW.slice();
+  const RAW_PROD_BACKUP = RAW_PRODUCTS.slice();
+  const RAW_CAIXA_BACKUP = RAW_CAIXA.slice();
+
+  // Função pra ler os arquivos previous na sequência (services → products → caixa)
+  // Cada leitor (readServicesFile, readProductsFile, readCaixaFile) sobrescreve RAW,
+  // RAW_PRODUCTS, RAW_CAIXA. Precisamos capturar os resultados e depois mesclar.
+  const finalizar = () => {
+    // Re-renderiza tudo com o conjunto estendido
+    const allDates = RAW.map(r => r.data.getTime());
+    const minDate = new Date(Math.min(...allDates));
+    const maxDate = new Date(Math.max(...allDates));
+    EXTENDED_ACTIVE = true;
+    renderAll(minDate, maxDate);
+    updateExtendedBadge();
+    if(btn){
+      btn.textContent = '✓ Relatório atualizado com período estendido';
+      btn.style.background = 'var(--green)';
+      setTimeout(() => {
+        btn.textContent = '↻ Atualizar novamente';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.background = '';
+      }, 3000);
+    }
+    // Scroll suave pro topo do dashboard
+    document.getElementById('dashboard-top')?.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  // Concatena evitando duplicatas (mesma data + mesmo cliente + mesmo barbeiro + mesmo serviço)
+  function mergeRaw(atual, anterior){
+    const seen = new Set();
+    atual.forEach(r => {
+      const k = (r.data ? r.data.getTime() : '') + '|' + (r.telefone||r.cliente||'') + '|' + (r.usuario||'') + '|' + (r.servico||'') + '|' + (r.total||0);
+      seen.add(k);
+    });
+    const merged = atual.slice();
+    anterior.forEach(r => {
+      const k = (r.data ? r.data.getTime() : '') + '|' + (r.telefone||r.cliente||'') + '|' + (r.usuario||'') + '|' + (r.servico||'') + '|' + (r.total||0);
+      if(!seen.has(k)){ merged.push(r); seen.add(k); }
+    });
+    return merged;
+  }
+  function mergeProducts(atual, anterior){
+    const seen = new Set();
+    atual.forEach(r => {
+      const k = (r.data ? r.data.getTime() : '') + '|' + (r.telefone||r.cliente||'') + '|' + (r.usuario||'') + '|' + (r.produto||'') + '|' + (r.total||0);
+      seen.add(k);
+    });
+    const merged = atual.slice();
+    anterior.forEach(r => {
+      const k = (r.data ? r.data.getTime() : '') + '|' + (r.telefone||r.cliente||'') + '|' + (r.usuario||'') + '|' + (r.produto||'') + '|' + (r.total||0);
+      if(!seen.has(k)){ merged.push(r); seen.add(k); }
+    });
+    return merged;
+  }
+  function mergeCaixa(atual, anterior){
+    // Caixa não tem data - é totalizador. Soma os valores por forma de pagamento.
+    if(atual.length === 0) return anterior.slice();
+    if(anterior.length === 0) return atual.slice();
+    const map = {};
+    atual.forEach(r => {
+      map[r.forma] = { forma: r.forma, valorFaturado: r.valorFaturado, quantidade: r.quantidade };
+    });
+    anterior.forEach(r => {
+      if(map[r.forma]){
+        map[r.forma].valorFaturado += r.valorFaturado;
+        map[r.forma].quantidade += r.quantidade;
+      } else {
+        map[r.forma] = { forma: r.forma, valorFaturado: r.valorFaturado, quantidade: r.quantidade };
+      }
+    });
+    return Object.values(map);
+  }
+
+  // Cadeia: lê serviços anterior → mescla → lê produtos anterior → mescla → lê caixa anterior → mescla → finaliza
+  readServicesFile(PENDING_EXTEND_FILES.services, () => {
+    const RAW_PREV_DATA = RAW.slice();  // RAW agora tem os dados anteriores
+    RAW = mergeRaw(RAW_BACKUP, RAW_PREV_DATA);  // Combina
+
+    const depoisProdutos = () => {
+      const depoisCaixa = () => finalizar();
+      if(PENDING_EXTEND_FILES.caixa){
+        // readCaixaFile sobrescreve RAW_CAIXA - precisa restaurar e mesclar
+        readCaixaFile(PENDING_EXTEND_FILES.caixa, () => {
+          const CAIXA_PREV_DATA = RAW_CAIXA.slice();
+          RAW_CAIXA = mergeCaixa(RAW_CAIXA_BACKUP, CAIXA_PREV_DATA);
+          depoisCaixa();
+        });
+      } else {
+        RAW_CAIXA = RAW_CAIXA_BACKUP;  // mantém o atual sem mudança
+        depoisCaixa();
+      }
+    };
+
+    if(PENDING_EXTEND_FILES.products){
+      readProductsFile(PENDING_EXTEND_FILES.products, () => {
+        const PROD_PREV_DATA = RAW_PRODUCTS.slice();
+        RAW_PRODUCTS = mergeProducts(RAW_PROD_BACKUP, PROD_PREV_DATA);
+        depoisProdutos();
+      });
+    } else {
+      RAW_PRODUCTS = RAW_PROD_BACKUP;  // mantém produtos atuais
+      depoisProdutos();
+    }
+  });
+}
+
+// Mostra um badge "Análise estendida" no topo do dashboard quando o relatório foi estendido
+function updateExtendedBadge(){
+  const periodLabel = document.getElementById('period-label');
+  if(!periodLabel || !EXTENDED_ACTIVE) return;
+  // Remove badge antigo se houver
+  const old = document.getElementById('extended-badge');
+  if(old) old.remove();
+  const badge = document.createElement('span');
+  badge.id = 'extended-badge';
+  badge.className = 'extend-badge-active';
+  badge.innerHTML = `📅 Análise estendida · ${PERIOD_DAYS} dias`;
+  periodLabel.parentNode.insertBefore(badge, periodLabel.nextSibling);
+}
+
 // Drag-and-drop nos 3 cards (desktop) - dentro de DOMContentLoaded pra garantir que existem
 document.addEventListener('DOMContentLoaded', () => {
   ['dzServices','dzProducts','dzCaixa'].forEach(cardId => {
@@ -1978,6 +2279,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if(e.target.files[0]) handlePrevFile(e.target.files[0]);
     });
   }
+
+  // Listeners dos 3 inputs de período anterior (estender análise pra 6 meses)
+  setupExtendInputs();
 });
 
 // Compatibilidade: funções antigas redirecionam pro novo fluxo
