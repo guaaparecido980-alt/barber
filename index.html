@@ -1218,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v9.3</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v9.6</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -3392,42 +3392,153 @@ function workingDaysFor(barberName, minDate, maxDate, groupedData){
    CLASSIFICAÇÃO DE SERVIÇO
    ============================================ */
 function classifyService(servico){
-  const s = (servico||'').toLowerCase();
+  const s = (servico||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   // Combo: tem cabelo E barba na mesma string
   const hasCabelo = /cabelo|corte/.test(s);
   const hasBarba = /barba/.test(s);
   if(hasCabelo && hasBarba) return 'combo';
   if(hasCabelo) return 'cabelo';
   if(hasBarba) return 'barba';
-  return 'extra'; // sobrancelha, pezinho, camuflagem, hidratação, etc
+  return 'extra';
+}
+
+/* ============================================
+   TEMPO ESTIMADO POR SERVIÇO (em minutos)
+   Tempos definidos pelo dono da casa em conversa direta:
+   - Nariz, ouvido e sobrancelha (combo): 30 min
+   - Nariz / Ouvidos / Sobrancelha (individuais): 15 min cada
+   - Podologia: 60 min
+   - Manicure: 30 min · Pedicure: 30 min · Manicure+Pedicure (combo): 60 min
+   - Faxina na cara: 90 min
+   - Depilação máquina: 15 min por região
+   - Depilação cera: 30 min por região
+   A ordem importa: regras mais específicas vêm ANTES das genéricas.
+   ============================================ */
+const SERVICE_TIME_RULES = [
+  // === COMBOS DE ROSTO (3 itens primeiro, depois 2) ===
+  { test: /nariz.*ouvido.*sobrancelha|nariz.*sobrancelha.*ouvido|ouvido.*nariz.*sobrancelha|ouvido.*sobrancelha.*nariz|sobrancelha.*nariz.*ouvido|sobrancelha.*ouvido.*nariz/i, time: 30 },
+  // Sub-combos de 2 itens de rosto (20 min)
+  { test: /nariz.*(sobrancelha|ouvido)|(sobrancelha|ouvido).*nariz/i, time: 20 },
+  { test: /ouvido.*sobrancelha|sobrancelha.*ouvido/i, time: 20 },
+
+  // === COMBO MÃOS/PÉS ===
+  { test: /manicure.*pedicure|pedicure.*manicure/i, time: 60 },
+
+  // === DEPILAÇÃO - REGIÕES JUNTAS ===
+  // "Costas + Ombro" e similares: assumimos máquina (padrão masculino), 15+15
+  { test: /costas.*ombro|ombro.*costas|peito.*ombro|ombro.*peito/i, time: 30 },
+
+  // === DEPILAÇÃO CERA (30 min por região) ===
+  { test: /costas.*cera/i, time: 30 },
+  { test: /peito.*cera/i, time: 30 },
+  { test: /(braco|braço).*cera/i, time: 30 },
+  { test: /perna.*cera/i, time: 30 },
+  { test: /(intima|genital|virilha).*cera/i, time: 30 },
+  { test: /axila.*cera/i, time: 30 },
+  { test: /barriga.*cera/i, time: 30 },
+
+  // === DEPILAÇÃO MÁQUINA (15 min por região) ===
+  { test: /costas.*maquina/i, time: 15 },
+  { test: /peito.*maquina/i, time: 15 },
+  { test: /(braco|braço).*maquina/i, time: 15 },
+  { test: /perna.*maquina/i, time: 15 },
+  { test: /(intima|genital|virilha).*maquina/i, time: 15 },
+  { test: /barriga.*maquina/i, time: 15 },
+  // Axila (por padrão é máquina quando não especifica)
+  { test: /axilas?/i, time: 15 },
+  // Buço/bigode é depilação rápida (mais perto de máquina)
+  { test: /buco|bigode/i, time: 15 },
+
+  // === SOBRANCELHA SOZINHA (mesmo com "design" ou "cera" no nome) ===
+  // "Sobrancelha Design Cera" continua sendo SOBRANCELHA, não vira "depilação cera"
+  { test: /sobrancelha/i, time: 15 },
+
+  // === ITENS INDIVIDUAIS DE ROSTO ===
+  { test: /^nariz\b|^narina/i, time: 15 },
+  { test: /^ouvidos?\b/i, time: 15 },
+
+  // === PODOLOGIA, MANICURE, PEDICURE ===
+  { test: /podologia/i, time: 60 },
+  { test: /pedicure/i, time: 30 },
+  { test: /manicure/i, time: 30 },
+
+  // === FACIAL ===
+  { test: /faxina na cara|limpeza de pele|limpeza facial/i, time: 90 },
+  // Hidratação facial e massagem facial não foram definidas — mantém estimativa
+  { test: /hidratacao facial|massagem facial/i, time: 30 },
+
+  // === EXTRAS RÁPIDOS DO BARBEIRO ===
+  { test: /pezinho/i, time: 10 },
+
+  // === CABELO E BARBA ===
+  { test: /cabelo.*barba|barba.*cabelo|combo/i, time: 60 },
+  { test: /cabelo pai.*filho/i, time: 60 },
+  { test: /cabelo raspar/i, time: 20 },
+  { test: /corte de cabelo|cabelo|corte/i, time: 30 },
+  { test: /barba completa/i, time: 30 },
+  { test: /barba/i, time: 25 },
+
+  // === TRATAMENTOS CAPILARES ===
+  { test: /hidratacao capilar|hidratacao keune/i, time: 30 },
+  { test: /matizacao|camuflagem|coloracao|tintura/i, time: 45 },
+  { test: /progressiva|alisamento/i, time: 90 },
+  { test: /relaxamento|botox capilar/i, time: 60 },
+
+  // === MASSAGEM / REFLEXOLOGIA ===
+  { test: /reflexologia/i, time: 30 },
+  { test: /massagem/i, time: 45 }
+];
+
+// Retorna o tempo estimado em minutos pra um nome de serviço
+// Usa as regras acima, ou fallback pra tabela legada de CFG.defaultTimes
+function getServiceTime(servico){
+  const s = String(servico||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for(const rule of SERVICE_TIME_RULES){
+    if(rule.test.test(s)) return rule.time;
+  }
+  // Fallback: classificação antiga (cabelo/barba/combo/extra)
+  const cat = classifyService(servico);
+  return (CFG.defaultTimes && CFG.defaultTimes[cat]) || 30;
 }
 
 /* ============================================
    TEMPO DE UM ATENDIMENTO (agrupado)
    ============================================ */
 function timeOfAttendance(barber, services){
-  // services = array de classificações ['cabelo', 'extra', 'extra']
-  const times = CFG.customTimes[barber] || CFG.defaultTimes;
-  const t = {
-    cabelo: times.cabelo || CFG.defaultTimes.cabelo,
-    barba: times.barba || CFG.defaultTimes.barba,
-    combo: times.combo || CFG.defaultTimes.combo,
-    extra: CFG.defaultTimes.extra
-  };
+  // services = array de NOMES de serviços, ex ['Cabelo 150', 'Pezinho do Cabelo']
+  //                                ou ['Costas Máquina', 'Peito Máquina']
+  if(!services || services.length === 0) return 0;
 
-  const hasCombo = services.includes('combo');
-  const hasCabelo = services.includes('cabelo');
-  const hasBarba = services.includes('barba');
-  const hasExtra = services.includes('extra');
+  // Detecta se é atendimento "masculino" (tem corte de cabelo ou barba na lista)
+  const hasMasculino = services.some(s => /cabelo|corte|barba/i.test(String(s||'')));
 
-  // Combo já inclui cabelo e barba
-  if(hasCombo) return t.combo;
-  // Cabelo + Barba no mesmo atendimento = combo
-  if(hasCabelo && hasBarba) return t.combo;
-  if(hasCabelo) return t.cabelo;  // extra pega carona
-  if(hasBarba) return t.barba;    // extra pega carona
-  if(hasExtra) return t.extra;    // só extra isolado
-  return 0;
+  if(hasMasculino){
+    // === Lógica antiga preservada pros barbeiros homens ===
+    // Cliente que fez Cabelo + Pezinho continua contando como "1 atendimento de cabelo"
+    // pra não inflar artificialmente a ocupação dos barbeiros.
+    const times = CFG.customTimes[barber] || CFG.defaultTimes;
+    const t = {
+      cabelo: times.cabelo || CFG.defaultTimes.cabelo,
+      barba: times.barba || CFG.defaultTimes.barba,
+      combo: times.combo || CFG.defaultTimes.combo,
+      extra: CFG.defaultTimes.extra
+    };
+    const cats = services.map(classifyService);
+    const hasCombo = cats.includes('combo');
+    const hasCabelo = cats.includes('cabelo');
+    const hasBarba = cats.includes('barba');
+    if(hasCombo) return t.combo;
+    if(hasCabelo && hasBarba) return t.combo;
+    if(hasCabelo) return t.cabelo;
+    if(hasBarba) return t.barba;
+    return t.extra;
+  } else {
+    // === Lógica nova pros serviços femininos (pelos/manicure/podologia/faciais) ===
+    // SOMA o tempo individual de cada serviço, porque é comum o cliente fazer
+    // múltiplos no mesmo atendimento (ex: Manicure + Pedicure + Sobrancelha).
+    // Cada serviço tem tempo realista vindo da tabela SERVICE_TIME_RULES.
+    return services.reduce((sum, name) => sum + getServiceTime(name), 0);
+  }
 }
 
 /* ============================================
@@ -3454,7 +3565,7 @@ function groupAttendances(rows){
         houseRevenue: 0
       };
     }
-    groups[key].services.push(classifyService(r.servico));
+    groups[key].services.push(r.servico);  // nome completo, ex "Costas Máquina"
     groups[key].servicesText.push(r.servico);
     groups[key].revenue += r.total;
     groups[key].commission += r.parteProf;
@@ -3465,9 +3576,15 @@ function groupAttendances(rows){
   return Object.values(groups).map(g => ({
     ...g,
     minutes: timeOfAttendance(g.usuario, g.services),
-    primaryService: g.services.includes('combo') || (g.services.includes('cabelo') && g.services.includes('barba')) ? 'Combo' :
-                    g.services.includes('cabelo') ? 'Cabelo' :
-                    g.services.includes('barba') ? 'Barba' : 'Extra'
+    primaryService: (function(){
+      // services agora tem NOMES dos serviços. Classifica cada um e pega o "tipo dominante".
+      const cats = (g.services||[]).map(classifyService);
+      if(cats.includes('combo')) return 'Combo';
+      if(cats.includes('cabelo') && cats.includes('barba')) return 'Combo';
+      if(cats.includes('cabelo')) return 'Cabelo';
+      if(cats.includes('barba')) return 'Barba';
+      return 'Extra';
+    })()
   }));
 }
 
