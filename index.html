@@ -1218,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v9.6</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v9.7</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -4531,8 +4531,9 @@ function renderFrequencySection(){
   // Período curto avisa
   const periodDays = (Math.max(...RAW.map(r=>r.data.getTime())) - Math.min(...RAW.map(r=>r.data.getTime()))) / (1000*60*60*24);
   const periodNote = periodDays < 60 ? `
-    <div style="padding:12px 16px;background:rgba(201,169,97,.05);border-left:2px solid var(--gold-soft);font-size:11px;color:var(--text-dim);margin-bottom:20px;line-height:1.5">
-      Arquivo com ${Math.round(periodDays)} dias. Para análise mais precisa de frequência, exporte <strong style="color:var(--text)">90+ dias</strong>: em períodos curtos muitos clientes mensais aparecem como "veio 1 vez".
+    <div style="padding:16px 20px;background:rgba(212,129,74,.08);border:1px solid rgba(212,129,74,.3);border-left:3px solid #d4814a;font-size:12px;color:var(--text);margin-bottom:20px;line-height:1.6;border-radius:2px">
+      <strong style="color:#e89860">⚠ Números aproximados</strong><br>
+      Arquivo com apenas <strong>${Math.round(periodDays)} dias</strong>. Nessa janela curta, muitos clientes mensais (que voltam a cada 30 dias) aparecem como <em>"veio uma única vez"</em> porque cabe só 1 visita no período. Pra ver o padrão real, use <strong>90+ dias</strong> ou <strong>estenda pra 6 meses</strong> lá embaixo.
     </div>` : '';
 
   const cats = [
@@ -4613,6 +4614,13 @@ function renderIndividualFrequency(barberName){
     {key:'unica', label:'Só 1 visita', color:'#6e6a62'}
   ];
 
+  // Aviso de período curto (aparece antes de tudo)
+  const shortPeriod = PERIOD_DAYS < 60;
+  const shortPeriodNote = shortPeriod ? `
+    <div style="padding:14px 18px;background:rgba(212,129,74,.08);border:1px solid rgba(212,129,74,.3);border-left:3px solid #d4814a;font-size:12px;color:var(--text);margin-bottom:16px;line-height:1.5;border-radius:2px">
+      <strong style="color:#e89860">⚠ Números aproximados</strong> — arquivo com ${PERIOD_DAYS} dias. Clientes mensais podem aparecer como "veio 1 vez" (mal cabe 1 visita nessa janela). Estenda pra 90+ dias pra ver o padrão real.
+    </div>` : '';
+
   const bar = `<div class="freq-bar">${cats.map(c => {
     const pct = (data.counts[c.key] / data.total) * 100;
     if(pct < 0.5) return '';
@@ -4622,13 +4630,16 @@ function renderIndividualFrequency(barberName){
   const fid = data.counts.semanal + data.counts.quinzenal + data.counts.mensal;
   const fidPct = (fid / data.total) * 100;
 
-  const insightText = fidPct >= 55
-    ? `<strong style="color:var(--green)">Boa fidelização.</strong> ${fidPct.toFixed(0)}% dos seus clientes voltam regularmente (semanal/quinzenal/mensal). Continue cuidando do relacionamento.`
-    : fidPct >= 40
-    ? `<strong style="color:var(--gold)">Fidelização média.</strong> ${fidPct.toFixed(0)}% voltam regularmente, mas ${data.counts.unica} clientes vieram só 1 vez. Vale tentar reativar.`
-    : `<strong style="color:#d4814a">Atenção à fidelização.</strong> Só ${fidPct.toFixed(0)}% voltam regularmente. ${data.counts.unica} de ${data.total} clientes (${(data.counts.unica/data.total*100).toFixed(0)}%) vieram uma única vez. Vale entender por que não voltam.`;
-
-  const insight = `<div style="padding:14px 18px;background:rgba(0,0,0,.2);border-left:2px solid var(--gold-soft);font-size:13px;line-height:1.6;color:var(--text-dim);margin-bottom:16px">${insightText}</div>`;
+  // Se o período é curto, NÃO mostra o insight de "atenção" — os números não são confiáveis
+  let insight = '';
+  if(!shortPeriod){
+    const insightText = fidPct >= 55
+      ? `<strong style="color:var(--green)">Boa fidelização.</strong> ${fidPct.toFixed(0)}% dos seus clientes voltam regularmente (semanal/quinzenal/mensal). Continue cuidando do relacionamento.`
+      : fidPct >= 40
+      ? `<strong style="color:var(--gold)">Fidelização média.</strong> ${fidPct.toFixed(0)}% voltam regularmente, mas ${data.counts.unica} clientes vieram só 1 vez. Vale tentar reativar.`
+      : `<strong style="color:#d4814a">Atenção à fidelização.</strong> Só ${fidPct.toFixed(0)}% voltam regularmente. ${data.counts.unica} de ${data.total} clientes (${(data.counts.unica/data.total*100).toFixed(0)}%) vieram uma única vez. Vale entender por que não voltam.`;
+    insight = `<div style="padding:14px 18px;background:rgba(0,0,0,.2);border-left:2px solid var(--gold-soft);font-size:13px;line-height:1.6;color:var(--text-dim);margin-bottom:16px">${insightText}</div>`;
+  }
 
   const compact = `<div class="freq-compact">${cats.map(c => {
     const n = data.counts[c.key];
@@ -4641,7 +4652,7 @@ function renderIndividualFrequency(barberName){
     </div>`;
   }).join('')}</div>`;
 
-  el.innerHTML = insight + bar + compact;
+  el.innerHTML = shortPeriodNote + insight + bar + compact;
 }
 
 /* ============================================
@@ -4719,10 +4730,21 @@ function renderRiskClients(maxDate){
   const periodDays = (maxDate - new Date(Math.min(...RAW.map(r=>r.data.getTime())))) / (1000*60*60*24);
   if(periodDays < THRESHOLD_CRITICAL){
     document.getElementById('risk-clients-list').innerHTML = `
-      <div style="text-align:center;padding:30px 20px;color:var(--text-dim);font-size:13px;line-height:1.6">
-        <div style="font-family:var(--display);font-size:20px;color:var(--gold);margin-bottom:8px">Período curto para análise</div>
-        Para identificar clientes em risco com precisão, exporte pelo menos <strong style="color:var(--text)">90 dias</strong> de dados do Programa Salão.<br>
-        Hoje o arquivo cobre ${Math.round(periodDays)} dias — insuficiente para detectar quem sumiu há ${THRESHOLD_CRITICAL}+ dias.
+      <div style="padding:40px 24px;line-height:1.7">
+        <div style="max-width:640px;margin:0 auto">
+          <div style="font-family:var(--display);font-size:28px;color:var(--gold);margin-bottom:12px;font-style:italic">Período curto para essa análise</div>
+          <div style="color:var(--text-dim);font-size:14px;margin-bottom:20px">
+            "Clientes em risco" identifica quem <strong style="color:var(--text)">costumava vir e sumiu há ${THRESHOLD_CRITICAL}+ dias</strong>.
+            Seu arquivo cobre <strong style="color:var(--text)">${Math.round(periodDays)} dias</strong> — a janela nem cabe o critério de análise.
+          </div>
+          <div style="padding:16px 20px;background:rgba(201,169,97,.08);border-left:3px solid var(--gold);border-radius:2px;margin-top:20px">
+            <div style="font-family:var(--display);font-size:16px;color:var(--gold);margin-bottom:6px;font-style:italic">Duas formas de destravar</div>
+            <div style="color:var(--text-dim);font-size:13px;line-height:1.7">
+              <strong style="color:var(--text)">1.</strong> Exporte 90+ dias direto do Programa Salão e recarregue o relatório · ou<br>
+              <strong style="color:var(--text)">2.</strong> Suba o relatório do <strong style="color:var(--text)">trimestre anterior</strong> na seção "Estender análise até 6 meses" logo abaixo — o sistema junta com o que tá aqui e recalcula tudo.
+            </div>
+          </div>
+        </div>
       </div>`;
     return;
   }
@@ -5480,14 +5502,18 @@ function renderIndividualGoals(name, m){
   }
 
   // RETORNO - cliente que volta
-  if(m.returnRate < 30){
+  // IMPORTANTE: só faz sentido avaliar retorno com 45+ dias de dados.
+  // Em períodos curtos (30 dias), até o cliente mais fiel (mensal) aparece só 1 vez,
+  // fazendo todo mundo parecer com "retorno baixo" — meta enganosa.
+  const canTrustRetention = PERIOD_DAYS >= 45;
+  if(canTrustRetention && m.returnRate < 30){
     goals.push({
       priority: 'alta',
       title: 'Aumentar retorno de clientes',
       desc: `Apenas <strong>${Math.round(m.returnRate)}%</strong> dos seus clientes do mês voltaram. Isso quer dizer que <strong>${Math.round(100-m.returnRate)}%</strong> da sua agenda é gente nova toda vez - é trabalho dobrado pra fazer o mesmo número. Cliente fixo confia, gasta mais e indica.<br><br>O que muda isso na prática: 1) Antes do cliente sair da cadeira, marcar volta ("quando você quer voltar? Pode ser daqui 25 dias?"); 2) WhatsApp salvo + mensagem de lembrete no dia que ele costuma vir; 3) Programa simples: a cada 5 cortes, 1 acabamento grátis - aviso ao cliente do progresso.`,
-      target: `Meta: 40%+ de taxa de retorno (a partir de 2 meses de dados)`
+      target: `Meta: 40%+ de taxa de retorno`
     });
-  } else if(m.returnRate >= 30 && m.returnRate < 50){
+  } else if(canTrustRetention && m.returnRate >= 30 && m.returnRate < 50){
     goals.push({
       priority: 'media',
       title: 'Manter ritmo de fidelização',
