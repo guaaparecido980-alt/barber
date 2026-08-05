@@ -1218,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v9.9</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v10.0</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -2575,22 +2575,29 @@ function renderBarberComparative(barberName){
     return;
   }
 
-  // Métricas principais (todas normalizadas por dia útil quando fizer sentido)
+  // Ratio de tamanho dos períodos (pra avisar quando bem diferentes)
+  const dayRatio = cur.uniqueDays > 0 && prev.uniqueDays > 0 ? cur.uniqueDays / prev.uniqueDays : 1;
+  const periodsDiffer = Math.abs(dayRatio - 1) > 0.15;
   const perDay = (v, days) => days > 0 ? v / days : 0;
 
+  // === MÉTRICAS PRINCIPAIS (TOTAIS ABSOLUTOS, com sub-info por dia) ===
   const metricas = [
     {
-      label: 'Atendimentos por dia',
-      cur: perDay(cur.totalAtend, cur.uniqueDays),
-      prev: perDay(prev.totalAtend, prev.uniqueDays),
-      fmt: v => v.toFixed(1),
+      label: 'Faturamento total',
+      cur: cur.totalRevenue,
+      prev: prev.totalRevenue,
+      fmt: v => 'R$ ' + fmt.brl(v),
+      subCur: 'R$ ' + fmt.brl(perDay(cur.totalRevenue, cur.uniqueDays)) + '/dia',
+      subPrev: 'R$ ' + fmt.brl(perDay(prev.totalRevenue, prev.uniqueDays)) + '/dia',
       higherBetter: true
     },
     {
-      label: 'Faturamento por dia',
-      cur: perDay(cur.totalRevenue, cur.uniqueDays),
-      prev: perDay(prev.totalRevenue, prev.uniqueDays),
-      fmt: v => 'R$ ' + fmt.brl(v),
+      label: 'Atendimentos',
+      cur: cur.totalAtend,
+      prev: prev.totalAtend,
+      fmt: v => Math.round(v).toString(),
+      subCur: perDay(cur.totalAtend, cur.uniqueDays).toFixed(1) + '/dia',
+      subPrev: perDay(prev.totalAtend, prev.uniqueDays).toFixed(1) + '/dia',
       higherBetter: true
     },
     {
@@ -2619,6 +2626,8 @@ function renderBarberComparative(barberName){
       cur: cur.productsCount,
       prev: prev.productsCount,
       fmt: v => Math.round(v).toString(),
+      subCur: cur.productsRevenue > 0 ? 'R$ ' + fmt.brl(cur.productsRevenue) : '',
+      subPrev: prev.productsRevenue > 0 ? 'R$ ' + fmt.brl(prev.productsRevenue) : '',
       higherBetter: true
     },
     {
@@ -2629,7 +2638,7 @@ function renderBarberComparative(barberName){
       higherBetter: true
     },
     {
-      label: 'Clientes únicos atendidos',
+      label: 'Clientes únicos',
       cur: cur.uniqueClients,
       prev: prev.uniqueClients,
       fmt: v => Math.round(v).toString(),
@@ -2637,58 +2646,127 @@ function renderBarberComparative(barberName){
     }
   ];
 
-  // Grid dos indicadores
+  // Grid dos indicadores principais
   const cards = metricas.map(m => {
     const delta = m.cur - m.prev;
-    const pct = m.prev !== 0 ? (delta / m.prev) * 100 : 0;
+    const pct = m.prev !== 0 ? (delta / m.prev) * 100 : (m.cur > 0 ? 100 : 0);
     const isUp = delta > 0;
     const isGood = m.higherBetter ? isUp : !isUp;
     const color = Math.abs(pct) < 1 ? 'var(--text-mute)' : (isGood ? 'var(--green)' : '#d4814a');
     const arrow = Math.abs(pct) < 1 ? '→' : (isUp ? '↑' : '↓');
     const pctStr = Math.abs(pct) < 1 ? '=' : `${isUp ? '+' : ''}${pct.toFixed(1)}%`;
+    const subPrev = m.subPrev ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-mute);margin-top:2px">${m.subPrev}</div>` : '';
+    const subCur = m.subCur ? `<div style="font-family:var(--mono);font-size:9px;color:var(--gold);margin-top:2px">${m.subCur}</div>` : '';
     return `
       <div style="padding:14px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:2px">
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">${m.label}</div>
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px">
-          <div style="font-family:var(--display);font-size:14px;color:var(--text-dim)">${m.fmt(m.prev)}</div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center">
+          <div style="text-align:left">
+            <div style="font-family:var(--display);font-size:15px;color:var(--text-dim)">${m.fmt(m.prev)}</div>
+            ${subPrev}
+          </div>
           <div style="font-size:14px;color:${color}">${arrow}</div>
-          <div style="font-family:var(--display);font-size:18px;color:var(--text)">${m.fmt(m.cur)}</div>
+          <div style="text-align:right">
+            <div style="font-family:var(--display);font-size:19px;color:var(--text)">${m.fmt(m.cur)}</div>
+            ${subCur}
+          </div>
         </div>
-        <div style="text-align:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-family:var(--mono);font-size:11px;color:${color}">${pctStr}</div>
+        <div style="text-align:center;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-family:var(--mono);font-size:11px;color:${color}">${pctStr}</div>
       </div>
     `;
   }).join('');
-  const gridBarber = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">${cards}</div>`;
+  const gridBarber = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:24px">${cards}</div>`;
 
-  // Breakdown por CATEGORIA (cabelo, barba, combo, extra)
+  // === BREAKDOWN POR CATEGORIA (visão macro: cabelo/combo/barba/extra) ===
   const cats = ['cabelo', 'combo', 'barba', 'extra'];
-  const catLabels = { cabelo:'Cortes de cabelo', combo:'Combos (cabelo+barba)', barba:'Só barba', extra:'Extras (sobrancelha, hidratação, etc)' };
-  const catBreakdown = cats.map(k => {
+  const catLabels = { cabelo:'Cortes de cabelo', combo:'Combos (cabelo+barba)', barba:'Só barba', extra:'Serviços extras' };
+  const catRows = cats.map(k => {
     const c = cur.byCategory[k] || 0;
     const p = prev.byCategory[k] || 0;
     if(c === 0 && p === 0) return '';
     const delta = c - p;
     const pct = p > 0 ? (delta / p) * 100 : (c > 0 ? 100 : 0);
-    const isUp = delta > 0;
-    const color = Math.abs(pct) < 1 ? 'var(--text-mute)' : (isUp ? 'var(--green)' : '#d4814a');
-    const arrow = Math.abs(pct) < 1 ? '=' : (isUp ? '↑' : '↓');
+    const color = Math.abs(pct) < 1 ? 'var(--text-mute)' : (delta > 0 ? 'var(--green)' : '#d4814a');
+    const arrow = Math.abs(pct) < 1 ? '=' : (delta > 0 ? '↑' : '↓');
+    const deltaStr = delta === 0 ? '' : `<span style="color:${color};font-family:var(--mono);font-size:11px;margin-left:8px">(${delta > 0 ? '+' : ''}${delta})</span>`;
     return `
-      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border)">
         <div style="font-size:13px;color:var(--text)">${catLabels[k]}</div>
         <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);text-align:right">${p} <span style="opacity:.5">→</span></div>
-        <div style="font-family:var(--mono);font-size:14px;color:var(--text);text-align:right;min-width:40px">${c}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:${color};min-width:60px;text-align:right">${arrow} ${p > 0 ? (isUp?'+':'') + pct.toFixed(0) + '%' : 'novo'}</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--text);text-align:right;min-width:40px">${c}${deltaStr}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${color};min-width:60px;text-align:right">${arrow} ${p > 0 ? (delta>0?'+':'') + pct.toFixed(0) + '%' : 'novo'}</div>
       </div>
     `;
   }).filter(Boolean).join('');
 
-  const catSection = catBreakdown ? `
-    <div style="margin-top:24px;padding:16px 0 0 0;border-top:1px solid var(--border)">
-      <div style="font-family:var(--display);font-size:16px;color:var(--text);font-style:italic;margin-bottom:12px">Tipos de serviço</div>
-      ${catBreakdown}
+  const catSection = catRows ? `
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--display);font-size:18px;color:var(--text);font-style:italic;margin-bottom:6px">Visão por tipo de serviço</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px">Grupos principais</div>
+      ${catRows}
     </div>` : '';
 
-  // Insights automáticos (top ganhos e perdas)
+  // === BREAKDOWN DETALHADO POR SERVIÇO ESPECÍFICO ===
+  // Junta o nome de cada serviço nos 2 períodos
+  function countByService(raw){
+    const cnt = {};
+    raw.forEach(r => {
+      const nome = (r.servico || '').trim();
+      if(!nome) return;
+      cnt[nome] = (cnt[nome] || 0) + 1;
+    });
+    return cnt;
+  }
+  const curOwnRaw = SNAPSHOT_CURRENT.raw.filter(r => r.usuario === barberName);
+  const prevOwnRaw = SNAPSHOT_PREVIOUS.raw.filter(r => r.usuario === barberName);
+  const curBy = countByService(curOwnRaw);
+  const prevBy = countByService(prevOwnRaw);
+  const allServices = new Set([...Object.keys(curBy), ...Object.keys(prevBy)]);
+
+  // Constrói array com atual, anterior e diferença absoluta
+  const svcList = [...allServices].map(nome => {
+    const c = curBy[nome] || 0;
+    const p = prevBy[nome] || 0;
+    return { nome, cur: c, prev: p, delta: c - p, total: c + p, absDelta: Math.abs(c - p) };
+  }).sort((a,b) => b.total - a.total);  // ordena por volume total
+
+  const svcRows = svcList.map(s => {
+    const delta = s.delta;
+    const pct = s.prev > 0 ? (delta / s.prev) * 100 : (s.cur > 0 ? 100 : 0);
+    const color = Math.abs(pct) < 1 ? 'var(--text-mute)' : (delta > 0 ? 'var(--green)' : '#d4814a');
+    const arrow = delta === 0 ? '=' : (delta > 0 ? '↑' : '↓');
+    const deltaStr = delta === 0 ? '' : `<span style="color:${color};font-family:var(--mono);font-size:11px;margin-left:6px">(${delta > 0 ? '+' : ''}${delta})</span>`;
+    const pctStr = s.prev > 0 ? `${delta > 0 ? '+' : ''}${pct.toFixed(0)}%` : (s.cur > 0 ? 'novo' : '—');
+    return `
+      <div style="display:grid;grid-template-columns:1fr 60px 90px 60px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px">
+        <div style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.nome}">${s.nome}</div>
+        <div style="font-family:var(--mono);color:var(--text-dim);text-align:right">${s.prev} →</div>
+        <div style="font-family:var(--mono);color:var(--text);text-align:right">${s.cur}${deltaStr}</div>
+        <div style="font-family:var(--mono);color:${color};text-align:right;font-size:11px">${arrow} ${pctStr}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Cabeçalho da tabela detalhada
+  const svcHeader = `
+    <div style="display:grid;grid-template-columns:1fr 60px 90px 60px;gap:10px;padding:10px 12px;border-bottom:1px solid var(--gold-soft);font-family:var(--mono);font-size:9px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase">
+      <div>Serviço</div>
+      <div style="text-align:right">Anterior</div>
+      <div style="text-align:right">Atual</div>
+      <div style="text-align:right">Variação</div>
+    </div>
+  `;
+
+  const svcSection = svcList.length > 0 ? `
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--display);font-size:18px;color:var(--text);font-style:italic;margin-bottom:6px">Detalhamento por serviço</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px">Cada serviço executado · ordenado por volume</div>
+      <div style="max-height:420px;overflow-y:auto;background:rgba(0,0,0,.15);border:1px solid var(--border);border-radius:2px">
+        ${svcHeader}${svcRows}
+      </div>
+    </div>` : '';
+
+  // === Insights automáticos (top ganhos e perdas) — considera métricas E serviços específicos ===
   const changes = metricas.map(m => {
     const p = m.prev !== 0 ? ((m.cur - m.prev) / m.prev) * 100 : 0;
     return { label: m.label, pct: p, isGood: m.higherBetter ? p > 0 : p < 0, absPct: Math.abs(p) };
@@ -2697,29 +2775,44 @@ function renderBarberComparative(barberName){
   const positives = changes.filter(c => c.isGood).slice(0, 2);
   const negatives = changes.filter(c => !c.isGood).slice(0, 2);
 
+  // Serviços que mais cresceram e que mais caíram (em quantidade absoluta)
+  const svcGrew = svcList.filter(s => s.delta > 0).sort((a,b) => b.delta - a.delta).slice(0, 2);
+  const svcDropped = svcList.filter(s => s.delta < 0).sort((a,b) => a.delta - b.delta).slice(0, 2);
+
   let insights = '';
-  if(positives.length > 0 || negatives.length > 0){
-    insights = '<div style="margin-top:24px;padding:16px 20px;background:rgba(0,0,0,.25);border-left:3px solid var(--gold);border-radius:2px"><div style="font-family:var(--display);font-size:16px;color:var(--text);margin-bottom:10px;font-style:italic">Pra conversa com ' + barberName + '</div>';
+  if(positives.length > 0 || negatives.length > 0 || svcGrew.length > 0 || svcDropped.length > 0){
+    insights = '<div style="margin-top:24px;padding:18px 22px;background:rgba(0,0,0,.25);border-left:3px solid var(--gold);border-radius:2px"><div style="font-family:var(--display);font-size:18px;color:var(--text);margin-bottom:12px;font-style:italic">Pra conversa com ' + barberName + '</div>';
     if(positives.length > 0){
-      insights += '<div style="margin-bottom:10px;font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:var(--green)">↑ Elogie:</strong> ';
+      insights += '<div style="margin-bottom:8px;font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:var(--green)">↑ Elogie:</strong> ';
       insights += positives.map(c => `${c.label.toLowerCase()} <strong style="color:var(--text)">${c.pct > 0 ? '+' : ''}${c.pct.toFixed(0)}%</strong>`).join(' · ');
       insights += '</div>';
     }
+    if(svcGrew.length > 0){
+      insights += '<div style="margin-bottom:8px;font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:var(--green)">↑ Serviços em alta:</strong> ';
+      insights += svcGrew.map(s => `<strong style="color:var(--text)">${s.nome}</strong> +${s.delta}`).join(' · ');
+      insights += '</div>';
+    }
     if(negatives.length > 0){
-      insights += '<div style="font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:#d4814a">↓ Ponto de atenção:</strong> ';
+      insights += '<div style="margin-bottom:8px;font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:#d4814a">↓ Ponto de atenção:</strong> ';
       insights += negatives.map(c => `${c.label.toLowerCase()} <strong style="color:var(--text)">${c.pct.toFixed(0)}%</strong>`).join(' · ');
+      insights += '</div>';
+    }
+    if(svcDropped.length > 0){
+      insights += '<div style="font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:#d4814a">↓ Serviços caindo:</strong> ';
+      insights += svcDropped.map(s => `<strong style="color:var(--text)">${s.nome}</strong> ${s.delta}`).join(' · ');
       insights += '</div>';
     }
     insights += '</div>';
   }
 
   // Header do bloco
-  const header = `<div style="margin-bottom:16px">
-    <div style="font-family:var(--display);font-size:24px;color:var(--gold);font-style:italic">${barberName}</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:4px">${prev.totalAtend} atend. anterior · ${cur.totalAtend} atend. atual</div>
+  const rangeInfo = periodsDiffer ? `<span style="color:#d4814a">⚠ períodos com tamanhos diferentes (${prev.uniqueDays} vs ${cur.uniqueDays} dias úteis) — considere as métricas "por dia" pra comparação justa</span>` : `${prev.uniqueDays} vs ${cur.uniqueDays} dias úteis`;
+  const header = `<div style="margin-bottom:20px">
+    <div style="font-family:var(--display);font-size:26px;color:var(--gold);font-style:italic">${barberName}</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:4px;letter-spacing:.05em">${prev.totalAtend} atend. anterior · ${cur.totalAtend} atend. atual · ${rangeInfo}</div>
   </div>`;
 
-  container.innerHTML = header + gridBarber + catSection + insights;
+  container.innerHTML = header + gridBarber + catSection + svcSection + insights;
 }
 
 // Drag-and-drop nos 3 cards (desktop) - dentro de DOMContentLoaded pra garantir que existem
