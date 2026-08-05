@@ -1218,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v10.0</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v10.1</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -2360,7 +2360,12 @@ function computeBarberSnapshotMetrics(barberName, snap){
   const extrasCount = own.filter(r => classifyService(r.servico) === 'extra').length;
 
   // Produtos vendidos POR ESSE barbeiro (busca no snapshot de produtos)
-  const productsRows = (snap.products || []).filter(p => p.usuario === barberName);
+  // Produtos vendidos POR ESSE barbeiro — SEM bebidas (água, cerveja, refri) e sem estoques vazios
+  // Bebidas são consumo interno pra oferecer ao cliente, não produto de revenda
+  // Usa a mesma regra do ranking geral (isVitrineProduct)
+  const productsRows = (snap.products || []).filter(p =>
+    p.usuario === barberName && isVitrineProduct(p)
+  );
   const productsCount = productsRows.reduce((s,p) => s + (p.qtdItens || 1), 0);
   const productsRevenue = productsRows.reduce((s,p) => s + (p.total || 0), 0);
 
