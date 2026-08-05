@@ -1218,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v9.8</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v9.9</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -2334,6 +2334,67 @@ function computeSnapshotMetrics(snap){
   };
 }
 
+// Métricas de UM barbeiro específico dentro de um snapshot
+function computeBarberSnapshotMetrics(barberName, snap){
+  if(!snap || !snap.raw) return null;
+  const own = snap.raw.filter(r => r.usuario === barberName);
+  if(own.length === 0) return null;
+
+  const grouped = groupAttendances(own);
+  const totalAtend = grouped.length;
+  const totalRevenue = own.reduce((s,r) => s + (r.total||0), 0);
+  const totalSalao = own.reduce((s,r) => s + (r.parteSalao||0), 0);
+  const totalProf = own.reduce((s,r) => s + (r.parteProf||0), 0);
+  const ticket = totalAtend > 0 ? totalRevenue / totalAtend : 0;
+
+  // Dias trabalhados (dias únicos no calendário)
+  const uniqueDays = new Set(own.map(r => r.data.toISOString().slice(0,10))).size;
+
+  // Ocupação: minutos trabalhados / minutos disponíveis
+  const minutosUsados = grouped.reduce((s,g) => s + (timeOfAttendance(g.usuario, g.services)||0), 0);
+  // Capacidade: 8h × dias trabalhados (aproximação simples pro comparativo)
+  const minutosDisponiveis = uniqueDays * 8 * 60;
+  const occupancy = minutosDisponiveis > 0 ? (minutosUsados / minutosDisponiveis) * 100 : 0;
+
+  // Extras (serviços que não são cabelo/barba/combo)
+  const extrasCount = own.filter(r => classifyService(r.servico) === 'extra').length;
+
+  // Produtos vendidos POR ESSE barbeiro (busca no snapshot de produtos)
+  const productsRows = (snap.products || []).filter(p => p.usuario === barberName);
+  const productsCount = productsRows.reduce((s,p) => s + (p.qtdItens || 1), 0);
+  const productsRevenue = productsRows.reduce((s,p) => s + (p.total || 0), 0);
+
+  // Clientes únicos + taxa retorno DELE
+  const clientsSet = new Set(own.filter(r => r.telefone).map(r => r.telefone));
+  const uniqueClients = clientsSet.size;
+  const visitCount = {};
+  grouped.forEach(g => {
+    if(!g.telefone) return;
+    visitCount[g.telefone] = (visitCount[g.telefone] || 0) + 1;
+  });
+  const returning = Object.values(visitCount).filter(v => v >= 2).length;
+  const returnRate = uniqueClients > 0 ? (returning / uniqueClients) * 100 : 0;
+
+  // Breakdown por tipo de serviço (usa classifyService pra agrupar em cabelo/barba/combo/extra)
+  const byCategory = { cabelo: 0, barba: 0, combo: 0, extra: 0 };
+  own.forEach(r => { byCategory[classifyService(r.servico)]++; });
+
+  // Top 5 serviços específicos (pelo NOME real, não categoria)
+  const byService = {};
+  own.forEach(r => {
+    const nome = r.servico || 'Sem nome';
+    byService[nome] = (byService[nome] || 0) + 1;
+  });
+  const topServicos = Object.entries(byService).sort((a,b) => b[1]-a[1]).slice(0, 10);
+
+  return {
+    totalAtend, totalRevenue, totalSalao, totalProf, ticket, uniqueDays,
+    occupancy, extrasCount, productsCount, productsRevenue,
+    uniqueClients, returnRate, byCategory, topServicos,
+    days: snap.days, startStr: fmt.date(snap.minDate), endStr: fmt.date(snap.maxDate)
+  };
+}
+
 function renderComparativeCard(){
   const sec = document.getElementById('comparative-section');
   const content = document.getElementById('comparative-content');
@@ -2481,7 +2542,184 @@ function renderComparativeCard(){
 
   const nota = `<div style="text-align:center;margin-top:16px;font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.1em">Métricas por dia útil${normalizeInfo}</div>`;
 
-  content.innerHTML = header + grid + insights + nota;
+  // Seletor de profissional (permite abrir comparativo individual)
+  const barbers = [...new Set(SNAPSHOT_CURRENT.raw.map(r => r.usuario))].filter(b => b && b.trim()).sort();
+  // Só barbeiros que existem em AMBOS os períodos (pra comparação fazer sentido)
+  const prevBarbers = new Set(SNAPSHOT_PREVIOUS.raw.map(r => r.usuario));
+  const bothPeriods = barbers.filter(b => prevBarbers.has(b));
+
+  const seletor = bothPeriods.length === 0 ? '' : `
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+      <div style="font-family:var(--display);font-size:20px;color:var(--text);font-style:italic;margin-bottom:6px">Comparativo por profissional</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.15em;text-transform:uppercase;margin-bottom:16px">Selecione um profissional pra conversa 1-a-1 · o que melhorou, o que caiu</div>
+      <select id="comparative-barber-selector" onchange="renderBarberComparative(this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border-strong);color:var(--text);padding:14px 16px;font-family:var(--display);font-size:18px;cursor:pointer;border-radius:2px">
+        <option value="">— Escolha um profissional —</option>
+        ${bothPeriods.map(b => `<option value="${b}">${b}</option>`).join('')}
+      </select>
+      <div id="comparative-barber-content" style="margin-top:20px"></div>
+    </div>`;
+
+  content.innerHTML = header + grid + insights + nota + seletor;
+}
+
+// Renderiza o comparativo detalhado de UM barbeiro selecionado (mês anterior vs mês atual)
+function renderBarberComparative(barberName){
+  const container = document.getElementById('comparative-barber-content');
+  if(!container) return;
+  if(!barberName){ container.innerHTML = ''; return; }
+
+  const cur = computeBarberSnapshotMetrics(barberName, SNAPSHOT_CURRENT);
+  const prev = computeBarberSnapshotMetrics(barberName, SNAPSHOT_PREVIOUS);
+  if(!cur || !prev){
+    container.innerHTML = '<div style="padding:20px;color:var(--text-mute);text-align:center">Sem dados suficientes em algum dos períodos.</div>';
+    return;
+  }
+
+  // Métricas principais (todas normalizadas por dia útil quando fizer sentido)
+  const perDay = (v, days) => days > 0 ? v / days : 0;
+
+  const metricas = [
+    {
+      label: 'Atendimentos por dia',
+      cur: perDay(cur.totalAtend, cur.uniqueDays),
+      prev: perDay(prev.totalAtend, prev.uniqueDays),
+      fmt: v => v.toFixed(1),
+      higherBetter: true
+    },
+    {
+      label: 'Faturamento por dia',
+      cur: perDay(cur.totalRevenue, cur.uniqueDays),
+      prev: perDay(prev.totalRevenue, prev.uniqueDays),
+      fmt: v => 'R$ ' + fmt.brl(v),
+      higherBetter: true
+    },
+    {
+      label: 'Ticket médio',
+      cur: cur.ticket,
+      prev: prev.ticket,
+      fmt: v => 'R$ ' + fmt.brl2(v),
+      higherBetter: true
+    },
+    {
+      label: 'Ocupação',
+      cur: cur.occupancy,
+      prev: prev.occupancy,
+      fmt: v => v.toFixed(0) + '%',
+      higherBetter: true
+    },
+    {
+      label: 'Extras vendidos',
+      cur: cur.extrasCount,
+      prev: prev.extrasCount,
+      fmt: v => Math.round(v).toString(),
+      higherBetter: true
+    },
+    {
+      label: 'Produtos vendidos',
+      cur: cur.productsCount,
+      prev: prev.productsCount,
+      fmt: v => Math.round(v).toString(),
+      higherBetter: true
+    },
+    {
+      label: 'Taxa de retorno',
+      cur: cur.returnRate,
+      prev: prev.returnRate,
+      fmt: v => v.toFixed(0) + '%',
+      higherBetter: true
+    },
+    {
+      label: 'Clientes únicos atendidos',
+      cur: cur.uniqueClients,
+      prev: prev.uniqueClients,
+      fmt: v => Math.round(v).toString(),
+      higherBetter: true
+    }
+  ];
+
+  // Grid dos indicadores
+  const cards = metricas.map(m => {
+    const delta = m.cur - m.prev;
+    const pct = m.prev !== 0 ? (delta / m.prev) * 100 : 0;
+    const isUp = delta > 0;
+    const isGood = m.higherBetter ? isUp : !isUp;
+    const color = Math.abs(pct) < 1 ? 'var(--text-mute)' : (isGood ? 'var(--green)' : '#d4814a');
+    const arrow = Math.abs(pct) < 1 ? '→' : (isUp ? '↑' : '↓');
+    const pctStr = Math.abs(pct) < 1 ? '=' : `${isUp ? '+' : ''}${pct.toFixed(1)}%`;
+    return `
+      <div style="padding:14px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:2px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">${m.label}</div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px">
+          <div style="font-family:var(--display);font-size:14px;color:var(--text-dim)">${m.fmt(m.prev)}</div>
+          <div style="font-size:14px;color:${color}">${arrow}</div>
+          <div style="font-family:var(--display);font-size:18px;color:var(--text)">${m.fmt(m.cur)}</div>
+        </div>
+        <div style="text-align:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-family:var(--mono);font-size:11px;color:${color}">${pctStr}</div>
+      </div>
+    `;
+  }).join('');
+  const gridBarber = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">${cards}</div>`;
+
+  // Breakdown por CATEGORIA (cabelo, barba, combo, extra)
+  const cats = ['cabelo', 'combo', 'barba', 'extra'];
+  const catLabels = { cabelo:'Cortes de cabelo', combo:'Combos (cabelo+barba)', barba:'Só barba', extra:'Extras (sobrancelha, hidratação, etc)' };
+  const catBreakdown = cats.map(k => {
+    const c = cur.byCategory[k] || 0;
+    const p = prev.byCategory[k] || 0;
+    if(c === 0 && p === 0) return '';
+    const delta = c - p;
+    const pct = p > 0 ? (delta / p) * 100 : (c > 0 ? 100 : 0);
+    const isUp = delta > 0;
+    const color = Math.abs(pct) < 1 ? 'var(--text-mute)' : (isUp ? 'var(--green)' : '#d4814a');
+    const arrow = Math.abs(pct) < 1 ? '=' : (isUp ? '↑' : '↓');
+    return `
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--text)">${catLabels[k]}</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);text-align:right">${p} <span style="opacity:.5">→</span></div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--text);text-align:right;min-width:40px">${c}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${color};min-width:60px;text-align:right">${arrow} ${p > 0 ? (isUp?'+':'') + pct.toFixed(0) + '%' : 'novo'}</div>
+      </div>
+    `;
+  }).filter(Boolean).join('');
+
+  const catSection = catBreakdown ? `
+    <div style="margin-top:24px;padding:16px 0 0 0;border-top:1px solid var(--border)">
+      <div style="font-family:var(--display);font-size:16px;color:var(--text);font-style:italic;margin-bottom:12px">Tipos de serviço</div>
+      ${catBreakdown}
+    </div>` : '';
+
+  // Insights automáticos (top ganhos e perdas)
+  const changes = metricas.map(m => {
+    const p = m.prev !== 0 ? ((m.cur - m.prev) / m.prev) * 100 : 0;
+    return { label: m.label, pct: p, isGood: m.higherBetter ? p > 0 : p < 0, absPct: Math.abs(p) };
+  }).filter(c => c.absPct >= 5).sort((a,b) => b.absPct - a.absPct);
+
+  const positives = changes.filter(c => c.isGood).slice(0, 2);
+  const negatives = changes.filter(c => !c.isGood).slice(0, 2);
+
+  let insights = '';
+  if(positives.length > 0 || negatives.length > 0){
+    insights = '<div style="margin-top:24px;padding:16px 20px;background:rgba(0,0,0,.25);border-left:3px solid var(--gold);border-radius:2px"><div style="font-family:var(--display);font-size:16px;color:var(--text);margin-bottom:10px;font-style:italic">Pra conversa com ' + barberName + '</div>';
+    if(positives.length > 0){
+      insights += '<div style="margin-bottom:10px;font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:var(--green)">↑ Elogie:</strong> ';
+      insights += positives.map(c => `${c.label.toLowerCase()} <strong style="color:var(--text)">${c.pct > 0 ? '+' : ''}${c.pct.toFixed(0)}%</strong>`).join(' · ');
+      insights += '</div>';
+    }
+    if(negatives.length > 0){
+      insights += '<div style="font-size:13px;line-height:1.7;color:var(--text-dim)"><strong style="color:#d4814a">↓ Ponto de atenção:</strong> ';
+      insights += negatives.map(c => `${c.label.toLowerCase()} <strong style="color:var(--text)">${c.pct.toFixed(0)}%</strong>`).join(' · ');
+      insights += '</div>';
+    }
+    insights += '</div>';
+  }
+
+  // Header do bloco
+  const header = `<div style="margin-bottom:16px">
+    <div style="font-family:var(--display);font-size:24px;color:var(--gold);font-style:italic">${barberName}</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:4px">${prev.totalAtend} atend. anterior · ${cur.totalAtend} atend. atual</div>
+  </div>`;
+
+  container.innerHTML = header + gridBarber + catSection + insights;
 }
 
 // Drag-and-drop nos 3 cards (desktop) - dentro de DOMContentLoaded pra garantir que existem
