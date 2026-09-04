@@ -1218,7 +1218,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         <div class="brand-mark" aria-label="Barbearia Clube"></div>
         <div class="brand-text">
           <div class="brand-name">Barbearia Clube</div>
-          <div class="brand-sub">Painel de Gestão · Mercês · v10.2</div>
+          <div class="brand-sub">Painel de Gestão · Mercês · v10.3</div>
         </div>
       </div>
       <div class="topbar-meta">
@@ -1761,16 +1761,32 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
   <section class="section">
     <div class="section-head">
       <h2>Comparar com <em>período anterior</em></h2>
-      <span class="meta" id="extend-meta">Suba o mesmo período do mês passado (ou trimestre anterior) · o sistema COMPARA e ESTENDE</span>
+      <span class="meta" id="extend-meta">Sem limite · empilhe quantos períodos anteriores quiser pra chegar em 6 meses, 1 ano, o que precisar</span>
     </div>
     <div class="card" id="extend-box">
       <div id="extend-content">
         <div style="padding:32px 24px">
-          <div style="font-family:var(--display);font-size:20px;margin-bottom:8px;color:var(--text)">Comparativo + análise estendida</div>
-          <div style="color:var(--text-dim);font-size:13px;margin-bottom:24px;line-height:1.6;max-width:720px">
-            Suba aqui o relatório do <strong style="color:var(--text)">período anterior</strong> — pode ser o mês passado, os últimos 30 dias ou até um trimestre inteiro. O sistema faz <strong style="color:var(--text)">duas coisas de uma vez</strong>:<br>
+          <!-- Badge de estado: mostra o que já foi carregado (só aparece depois da 1ª estensão) -->
+          <div id="extend-state-badge" style="display:none;padding:14px 18px;background:rgba(90,138,58,.08);border:1px solid rgba(90,138,58,.3);border-left:3px solid var(--green);border-radius:2px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+              <div style="flex:1;min-width:200px">
+                <div style="font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px">✓ Análise estendida ativa</div>
+                <div style="font-size:13px;color:var(--text);line-height:1.5" id="extend-state-text">—</div>
+              </div>
+              <button onclick="resetExtendedAnalysis()" style="background:transparent;border:1px solid var(--border-strong);color:var(--text-dim);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;cursor:pointer;border-radius:2px;white-space:nowrap">
+                ✕ Recomeçar
+              </button>
+            </div>
+          </div>
+
+          <div style="font-family:var(--display);font-size:20px;margin-bottom:8px;color:var(--text)" id="extend-title">Comparativo + análise estendida</div>
+          <div style="color:var(--text-dim);font-size:13px;margin-bottom:24px;line-height:1.6;max-width:720px" id="extend-desc">
+            Suba aqui o relatório do <strong style="color:var(--text)">período anterior</strong> — pode ser o mês passado, os últimos 30 dias, um trimestre inteiro. O sistema faz <strong style="color:var(--text)">duas coisas de uma vez</strong>:<br>
             <span style="display:inline-block;margin-top:8px;color:var(--gold)">1) COMPARA</span> → mostra o que subiu, o que caiu, evolução de cada métrica<br>
-            <span style="display:inline-block;color:var(--gold)">2) ESTENDE</span> → junta os dois e recalcula tudo em base maior (clientes em risco e frequência ficam muito mais precisos)
+            <span style="display:inline-block;color:var(--gold)">2) ESTENDE</span> → junta os dois e recalcula tudo em base maior<br>
+            <span style="display:inline-block;margin-top:12px;padding:8px 14px;background:rgba(201,169,97,.08);border-left:2px solid var(--gold);color:var(--text);font-size:12px">
+              💡 Pra ir <strong>além de 6 meses</strong> (chegar em 1 ano ou mais): sobe um trimestre, aperta atualizar, sobe outro trimestre ainda mais antigo, aperta atualizar de novo — e assim por diante. Sem limite de vezes.
+            </span>
           </div>
 
           <div class="extend-uploads">
@@ -2181,6 +2197,7 @@ function applyExtendedAnalysis(){
     updateExtendedBadge();
     // Renderiza o comparativo período atual vs anterior no topo do dashboard
     try { renderComparativeCard(); } catch(e){ console.error('renderComparativeCard:', e); }
+    try { updateExtendStateUI(); } catch(e){ console.error('updateExtendStateUI:', e); }
     if(btn){
       btn.textContent = '✓ Comparativo pronto · relatório atualizado';
       btn.style.background = 'var(--green)';
@@ -2305,6 +2322,127 @@ function updateExtendedBadge(){
   badge.className = 'extend-badge-active';
   badge.innerHTML = `📅 Análise estendida · ${PERIOD_DAYS} dias`;
   periodLabel.parentNode.insertBefore(badge, periodLabel.nextSibling);
+}
+
+/* Atualiza o badge verde no topo da seção de estender, mostrando o que já foi carregado.
+   Também limpa os cards de upload pra ficar pronto pra próxima rodada (se o usuário quiser
+   adicionar MAIS um período ainda mais antigo, empilhando sem limite). */
+function updateExtendStateUI(){
+  const badge = document.getElementById('extend-state-badge');
+  const title = document.getElementById('extend-title');
+  const desc = document.getElementById('extend-desc');
+  const helper = document.getElementById('extend-helper');
+  if(!badge || !SNAPSHOT_CURRENT || !SNAPSHOT_PREVIOUS) return;
+
+  // Texto do badge com o que já foi carregado
+  const stateText = document.getElementById('extend-state-text');
+  if(stateText){
+    const fmtDate = d => d instanceof Date ? (String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear()) : '';
+    const totalDays = PERIOD_DAYS;
+    const totalMonths = (totalDays / 30).toFixed(1);
+    stateText.innerHTML = `Você tem <strong>${totalDays} dias</strong> de dados (~<strong>${totalMonths} meses</strong>) — <strong>atual</strong> ${fmtDate(SNAPSHOT_CURRENT.minDate)}–${fmtDate(SNAPSHOT_CURRENT.maxDate)} · <strong>anterior acumulado</strong> ${fmtDate(SNAPSHOT_PREVIOUS.minDate)}–${fmtDate(SNAPSHOT_PREVIOUS.maxDate)}. Quer ir mais longe? Suba outro período anterior abaixo.`;
+  }
+  badge.style.display = 'block';
+
+  // Muda o título e descrição pra deixar claro que dá pra continuar adicionando
+  if(title) title.textContent = 'Adicionar mais período anterior';
+  if(desc){
+    desc.innerHTML = `Suba o relatório de um período <strong style="color:var(--text)">ainda mais antigo</strong> pra continuar estendendo. O sistema vai juntar com o que já está aqui — <strong style="color:var(--text)">sem limite de vezes</strong>. Cada upload amplia mais a análise (clientes em risco, frequência, comparativo).`;
+  }
+
+  // Limpa os inputs e status dos cards pra próxima rodada
+  ['Services', 'Products', 'Caixa'].forEach(kind => {
+    const inp = document.getElementById('input' + kind + 'Prev');
+    if(inp) inp.value = '';
+    const card = document.getElementById('dz' + kind + 'Prev');
+    if(card) card.classList.remove('loaded');
+    const status = document.getElementById('extend-status-' + kind.toLowerCase());
+    if(status) status.textContent = '';
+  });
+  PENDING_EXTEND_FILES = { services: null, products: null, caixa: null };
+
+  // Botão volta pro estado inicial (aguardando novo arquivo)
+  if(helper) helper.textContent = 'Selecione outro arquivo pra continuar estendendo';
+  const btn = document.getElementById('btnExtend');
+  if(btn){
+    btn.textContent = '↻ Adicionar mais um período';
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+    btn.style.background = '';
+  }
+}
+
+/* Recomeça a análise estendida do zero — limpa os snapshots e recarrega o relatório
+   com apenas o arquivo original (o do dashboard). Útil se o usuário subiu o arquivo
+   errado ou quer começar a montar de novo. */
+function resetExtendedAnalysis(){
+  if(!SNAPSHOT_CURRENT){ return; }
+  if(!confirm('Recomeçar do zero? Isso vai remover os períodos anteriores que você adicionou e voltar pro relatório com só o arquivo original.')) return;
+
+  // Restaura RAW/PRODUCTS/CAIXA pro estado original (só o current)
+  RAW = SNAPSHOT_CURRENT.raw.slice();
+  RAW_PRODUCTS = SNAPSHOT_CURRENT.products.slice();
+  RAW_CAIXA = SNAPSHOT_CURRENT.caixa.slice();
+
+  // Limpa os snapshots
+  SNAPSHOT_CURRENT = null;
+  SNAPSHOT_PREVIOUS = null;
+  EXTENDED_ACTIVE = false;
+
+  // Esconde o badge de estado
+  const badge = document.getElementById('extend-state-badge');
+  if(badge) badge.style.display = 'none';
+
+  // Esconde a seção de comparativo do topo
+  const compSec = document.getElementById('comparative-section');
+  if(compSec) compSec.style.display = 'none';
+
+  // Remove o badge dourado do topo do dashboard
+  const extBadge = document.getElementById('extended-badge');
+  if(extBadge) extBadge.remove();
+
+  // Restaura o título e descrição originais do card
+  const title = document.getElementById('extend-title');
+  const desc = document.getElementById('extend-desc');
+  if(title) title.textContent = 'Comparativo + análise estendida';
+  if(desc){
+    desc.innerHTML = `Suba aqui o relatório do <strong style="color:var(--text)">período anterior</strong> — pode ser o mês passado, os últimos 30 dias, um trimestre inteiro. O sistema faz <strong style="color:var(--text)">duas coisas de uma vez</strong>:<br>
+      <span style="display:inline-block;margin-top:8px;color:var(--gold)">1) COMPARA</span> → mostra o que subiu, o que caiu, evolução de cada métrica<br>
+      <span style="display:inline-block;color:var(--gold)">2) ESTENDE</span> → junta os dois e recalcula tudo em base maior<br>
+      <span style="display:inline-block;margin-top:12px;padding:8px 14px;background:rgba(201,169,97,.08);border-left:2px solid var(--gold);color:var(--text);font-size:12px">
+        💡 Pra ir <strong>além de 6 meses</strong> (chegar em 1 ano ou mais): sobe um trimestre, aperta atualizar, sobe outro trimestre ainda mais antigo, aperta atualizar de novo — e assim por diante. Sem limite de vezes.
+      </span>`;
+  }
+  const helper = document.getElementById('extend-helper');
+  if(helper) helper.textContent = 'Selecione ao menos o arquivo de serviços anterior';
+  const btn = document.getElementById('btnExtend');
+  if(btn){
+    btn.textContent = '↻ Comparar e atualizar relatório';
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+  }
+
+  // Limpa uploads pendentes
+  ['Services', 'Products', 'Caixa'].forEach(kind => {
+    const inp = document.getElementById('input' + kind + 'Prev');
+    if(inp) inp.value = '';
+    const card = document.getElementById('dz' + kind + 'Prev');
+    if(card) card.classList.remove('loaded');
+    const status = document.getElementById('extend-status-' + kind.toLowerCase());
+    if(status) status.textContent = '';
+  });
+  PENDING_EXTEND_FILES = { services: null, products: null, caixa: null };
+
+  // Re-renderiza o dashboard com o RAW restaurado
+  const allDates = RAW.map(r => r.data.getTime());
+  const minDate = new Date(Math.min(...allDates));
+  const maxDate = new Date(Math.max(...allDates));
+  renderAll(minDate, maxDate);
+
+  // Scroll pro topo do dashboard
+  document.getElementById('dashboard-top')?.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 /* ============================================
